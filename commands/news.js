@@ -77,6 +77,78 @@ async function getTheNewYorkNewsSummaries(rss_feed_url) {
 	}
 }
 
+async function getNews(interaction) {
+		const section = interaction.options.getString('section') ?? 'HomePage';
+
+		function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+		// await interaction.deferReply();
+		await interaction.reply('Wait...');
+		await sleep(2000);
+		await interaction.followUp(`Hold on! We are making a summary of the news for the section ${section}...`);
+
+		// const NY_NEWS_RSS_FEED_URL = 'https://rss.nytimes.com/services/xml/rss/nyt/';
+		// const section_url = NY_NEWS_RSS_FEED_URL + section + '.xml';
+
+		// await getTheNewYorkNewsSummaries(section_url).then(summaries => {
+		await getBBCNewsSummaries('http://feeds.bbci.co.uk/news/rss.xml').then(summaries => {
+			if (summaries && summaries.length > 0) {
+				console.log(summaries);
+				/* await */ interaction.followUp(summaries[0].data.choices[0].text);
+			}
+		});
+
+		// await sleep(4000);
+		// await interaction.followUp(`Here is the result: ${section_url}!`);
+		// await interaction.followUp('Pong again!');
+}
+
+async function postEmbedAndButton(interaction) {
+	const channelId = interaction.options.getString('section') ?? '1083187401582723093';
+	// const channel = await interaction.client.channels.fetch(`${channelId}`);//
+	const channel = await interaction.client.channels.cache.get(channelId);
+
+	// If the channel is not found, return
+	if (!channel) {
+		return await interaction.reply({ content: `Channel with id=${channelId} cannot be found`, ephemeral: true });
+	}
+
+	const button_name = 'Принять участие!';
+	const button_register_id = `btn_register_${channelId}`;
+
+	const row = new ActionRowBuilder()
+		.addComponents(
+			new ButtonBuilder()
+				.setCustomId(button_register_id)
+				.setLabel(button_name)
+				.setStyle(ButtonStyle.Primary),
+			);
+
+	const description = 'А какие же условия участия? Всё очень просто:\n\n' +
+		`1. Зайти на канал челенджа <#${channelId}>\n\n` +
+		`2. Зарегестрироваться нажав на кнопку \`${button_name}\` внизу\n\n` +
+		'3. Выиграть как можно больше игр за выходные.  :gun:\n\n' +
+		'Всё супер просто!\n\n' +
+		'Ну что, удачи тогда всем, всех обняв 🤍 :rocket: ';
+	const embed = new EmbedBuilder()
+		.setColor(0x753d3d)
+		.setTitle('Регистрация!')
+		.setAuthor({ name: 'Malkisya', iconURL: 'https://cdn.discordapp.com/attachments/1083584210473861232/1085112263733690418/malkisya.jpeg' })
+		.setDescription(description);
+
+	await channel.send({
+		// content: 'I think you should,',
+		components: [row],
+		embeds: [embed],
+		// username: 'Malkisya',
+		// avatar_url: 'https://cdn.discordapp.com/attachments/1083584210473861232/1085112263733690418/malkisya.jpeg',
+	});
+
+	await interaction.followUp({ content: `REGISTER button with id=${button_register_id} has been added to the channel ${channel.name}`, ephemeral: true });
+}
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('news')
@@ -108,80 +180,13 @@ module.exports = {
 		if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
 			return await interaction.reply({ content: 'You do not have permissions to execute this command. Please contact the administrator', ephemeral: true });
 		}
-		await interaction.deferReply({ephemeral: true });
+		await interaction.deferReply({ ephemeral: true });
 
-		const channelId = interaction.options.getString('section') ?? '1083187401582723093';
-		// const channel = await interaction.client.channels.fetch(`${channelId}`);//
-		const channel = await interaction.client.channels.cache.get(channelId);
-		// const channelName = interaction.options.getString('section') ?? 'winall-vyklyk';
-		// Find the channel called "welcome-new-members"
-		// const channel = interaction.guild.channels.cache.find(ch => ch.name === channelName);
+		postEmbedAndButton(interaction);
 
-		// If the channel is not found, return
-		if (!channel) {
-			return await interaction.reply({ content: `Channel with id=${channelId} cannot be found`, ephemeral: true });
-		}
-
-		const button_name = 'Принять участие!';
-		const button_register_id = `btn_register_${channelId}`;
-
-		const row = new ActionRowBuilder()
-			.addComponents(
-				new ButtonBuilder()
-					.setCustomId(button_register_id)
-					.setLabel(button_name)
-					.setStyle(ButtonStyle.Primary),
-				);
-
-		const description = 'А какие же условия участия? Всё очень просто:\n\n' +
-			`1. Зайти на  канал челенджа <#${channelId}>\n\n` + 
-			`2. Зарегестрироваться нажав на кнопку \`${button_name}\` внизу\n\n` + 
-			'3. Выиграть как можно больше игр за выходные.  :gun:\n\n' +
-			'Всё супер просто!\n\n' + 
-			'Ну что, удачи тогда всем, всех обняв 🤍 :rocket: ';
-		const embed = new EmbedBuilder()
-			.setColor(0x753d3d)
-			.setTitle('Регистрация!')
-			.setAuthor({ name: 'Malkisya', iconURL: 'https://cdn.discordapp.com/attachments/1083584210473861232/1085112263733690418/malkisya.jpeg' })
-			.setDescription(description);
-
-		await channel.send({
-			// content: 'I think you should,',
-			components: [row],
-			embeds: [embed],
-			username: 'Malkisya',
-            avatar_url: 'https://cdn.discordapp.com/attachments/1083584210473861232/1085112263733690418/malkisya.jpeg',
-			// ephemeral: true // ephemeral does not work here
-		});
-
-		await interaction.followUp({ content: `REGISTER button with id=${button_register_id} has been added to the channel ${channel.name}`, ephemeral: true });
+		// https://discord.com/api/webhooks/1085125347298775130/rTWuBL6Sf30cg6r00DmP9XFhgb1AttZEYErMCKxXvgU-M9I7aWSiVY1TP15KNOUmmiDE
 
 		// OLD STUFF below:
-		// const section = interaction.options.getString('section') ?? 'HomePage';
-
-		// function sleep(ms) {
-        //     return new Promise(resolve => setTimeout(resolve, ms));
-        // }
-
-		// // await interaction.deferReply();
-		// await interaction.reply(`Wait...`);
-		// await sleep(2000);
-		// await interaction.followUp(`Hold on! We are making a summary of the news for the section ${section}...`);
-
-		// const NY_NEWS_RSS_FEED_URL = 'https://rss.nytimes.com/services/xml/rss/nyt/';
-		// const section_url = NY_NEWS_RSS_FEED_URL + section + '.xml';
-
-		// await getTheNewYorkNewsSummaries(section_url).then(summaries => {
-		// await getBBCNewsSummaries('http://feeds.bbci.co.uk/news/rss.xml').then(summaries => {
-		// 	if (summaries && summaries.length > 0) {
-		// 		console.log(summaries);
-		// 		/* await */ interaction.followUp(summaries[0].data.choices[0].text);
-		// 	}
-		// });
-
-		// await sleep(4000);
-		// await interaction.followUp(`Here is the result: ${section_url}!`);
-		// await interaction.followUp('Pong again!');
-
+		// await getNews(interaction);
 	},
 };
