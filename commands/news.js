@@ -4,6 +4,9 @@ const { Configuration, OpenAIApi } = require('openai');
 const { openai_token } = require('../config.json');
 const Parser = require('rss-parser');
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 async function getBBCNewsSummaries(rss_feed_url) {
 
 	const parser = new Parser();
@@ -149,6 +152,57 @@ async function postEmbedAndButton(interaction) {
 	await interaction.followUp({ content: `REGISTER button with id=${button_register_id} has been added to the channel ${channel.name}`, ephemeral: true });
 }
 
+async function postWebhook(interaction) {
+	const channelId = interaction.options.getString('section') ?? '1085124053792215040'; // '1083187401582723093'
+	// const channel = await interaction.client.channels.fetch(`${channelId}`);//
+	const channel = await interaction.client.channels.cache.get(channelId);
+
+	// If the channel is not found, return
+	if (!channel) {
+		return await interaction.reply({ content: `Channel with id=${channelId} cannot be found`, ephemeral: true });
+	}
+
+	function getVyklykData() {
+		const vyklyksPath = path.join(__dirname, '..//vyklyks');
+		const vyklykFiles = fs.readdirSync(vyklyksPath).filter(file => file.endsWith('.json'));
+
+		// JSON.parse(fs.readFileSync('../vyklyks/winall-vyklyk.json'));
+		for (const file of vyklykFiles) {
+			const filePath = path.join(vyklyksPath, file);
+			const vyklykData = require(filePath);
+			// console.log(vyklykData);
+			return vyklykData;
+		}
+	}
+	const vyklykData = getVyklykData ();
+
+	// Find a web-hook with channel-name-id. If not found then create one
+	const webHookName = `Vyklyk Hook ${channelId}`;
+	const webHooks = await channel.fetchWebhooks();
+	let webhookClient = webHooks ? webHooks.find(wh => wh.name === webHookName) : null;
+	if (!webhookClient) {
+		webhookClient = await channel.createWebhook({
+			name: webHookName,
+			avatar: vyklykData.avatar_url,
+		});
+	}
+	await interaction.followUp({ content: `Webhook id=${webhookClient.id} has been found or created for the channel ${channel.name}`, ephemeral: true });
+
+	const button_name = 'Принять участие!';
+	const button_register_id = `btn_register_${channelId}`;
+
+	const row = new ActionRowBuilder()
+		.addComponents(
+			new ButtonBuilder()
+				.setCustomId(button_register_id)
+				.setLabel(button_name)
+				.setStyle(ButtonStyle.Primary),
+			);
+
+	vyklykData.components = [row];
+	await webhookClient.send(vyklykData);
+}
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('news')
@@ -182,9 +236,9 @@ module.exports = {
 		}
 		await interaction.deferReply({ ephemeral: true });
 
-		postEmbedAndButton(interaction);
+		postWebhook(interaction);
+		// postEmbedAndButton(interaction);
 
-		// https://discord.com/api/webhooks/1085125347298775130/rTWuBL6Sf30cg6r00DmP9XFhgb1AttZEYErMCKxXvgU-M9I7aWSiVY1TP15KNOUmmiDE
 
 		// OLD STUFF below:
 		// await getNews(interaction);
