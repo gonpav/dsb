@@ -104,16 +104,19 @@ module.exports = {
             return i.customId === MODAL_FACEIT_REGISTER && i.user.id === interaction.user.id;
         };
         interaction.awaitModalSubmit({ time: 600000, filter })
-            .then(() => {
-                console.log('Collected!');
-                // i.reply({ content: 'Some text', ephemeral: true });
-                // i.reply('Thank you for your submission!');
+            .then(async () => {
                 const message = MsgConstants.getMessage(MsgConstants.CHALLENGE_SUBMISSION_SUCCESS, interaction.locale, userMention(interaction.user.id));
-                interaction.followUp({ content: message, ephemeral: true });
-                // interaction.followUp({ content: `${userMention(interaction.user.id)} thank you for your submission!`, ephemeral: true });
+                await interaction.followUp({ content: message, ephemeral: true });
 
-                // interaction.deferReply();
-                // interaction.editReply('Thank you for your submission!');
+                // Long operation here.... 
+                console.log('Collected!');
+                function sleep(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                }
+
+                await sleep(2000);
+                await interaction.followUp({content: 'Hold on! We are making a summary of the news for the section', ephemeral: true });
+
             })
             .catch(err => {
                 console.log(`No modal submit interaction was collected: ${err}`)
