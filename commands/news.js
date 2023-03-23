@@ -1,7 +1,17 @@
+// /////////////////////////////////////////////////////////////////////////////////
+//
+// We use the approach of creating Embeds on Discohook described here:
+// - https://www.youtube.com/watch?v=wlMCDXf2b4E
+//
+// The embed from Discohook should be copied by clicking on 'JSON Data Editor'
+// and entered in the command prompt together 
+//
+// /////////////////////////////////////////////////////////////////////////////////
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { PermissionsBitField } = require('discord.js');
 const { Configuration, OpenAIApi } = require('openai');
 const { openai_token } = require('../config.json');
+const BtnCommands = require('../btn-commands.js');
 const Parser = require('rss-parser');
 
 const fs = require('node:fs');
@@ -83,6 +93,7 @@ async function getTheNewYorkNewsSummaries(rss_feed_url) {
 async function getNews(interaction) {
 		const section = interaction.options.getString('section') ?? 'HomePage';
 
+		// const sleep = require('node:timers/promises').setTimeout;
 		function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
@@ -189,7 +200,7 @@ async function postWebhook(interaction) {
 	await interaction.followUp({ content: `Webhook id=${webhookClient.id} has been found or created for the channel ${channel.name}`, ephemeral: true });
 
 	const button_name = 'Принять участие!';
-	const button_register_id = `btn_register_${channelId}`;
+	const button_register_id = BtnCommands.createVyklykRegisterButtonId(channelId);
 
 	const row = new ActionRowBuilder()
 		.addComponents(
@@ -201,6 +212,17 @@ async function postWebhook(interaction) {
 
 	vyklykData.components = [row];
 	await webhookClient.send(vyklykData);
+
+	// const filter = i => i.customId === button_register_id;
+	// const collector = channel.createMessageComponentCollector({ filter });
+
+	// collector.on('collect', async i => {
+	// 	await i.update({ content: 'A button was clicked!', components: [] });
+	// });
+
+	// collector.on('end', collected => { 
+	// 	console.log(`Collected ${collected.size} items`);
+	// });
 }
 
 module.exports = {

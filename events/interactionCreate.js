@@ -1,4 +1,5 @@
 const { Events } = require('discord.js');
+const BtnCommands = require('../btn-commands.js');
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -47,6 +48,11 @@ module.exports = {
 			}
 			catch (error) {
 				console.error(error);
+			}
+		}
+		else if (interaction.isButton()) {
+			if (BtnCommands.isGlobalButton(interaction.customId)) {
+				BtnCommands.onGlobalButtonInteraction(interaction);
 			}
 		}
 	},
