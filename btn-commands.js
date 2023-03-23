@@ -5,7 +5,7 @@
 //
 // /////////////////////////////////////////////////////////////////////////////////
 
-const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { channelMention, userMention } = require('discord.js');
 const MsgConstants = require('./msg-constants.js');
 
@@ -88,8 +88,7 @@ module.exports = {
             .setPlaceholder(MsgConstants.getMessage(MsgConstants.MDL_FACEIT_PLACEHOLDER, interaction.locale))
 			.setStyle(TextInputStyle.Paragraph); // Short means only a single line of text
 
-
-            // An action row only holds one text input,
+        // An action row only holds one text input,
 		// so you need one action row per text input.
 		const firstActionRow = new ActionRowBuilder().addComponents(faceitNicknameInput);
 
@@ -103,30 +102,30 @@ module.exports = {
             i.deferUpdate();
             return i.customId === MODAL_FACEIT_REGISTER && i.user.id === interaction.user.id;
         };
-        interaction.awaitModalSubmit({ time: 600000, filter })
+        interaction.awaitModalSubmit({ time: 600_000, filter })
             .then(async () => {
                 const message = MsgConstants.getMessage(MsgConstants.CHALLENGE_SUBMISSION_SUCCESS, interaction.locale, userMention(interaction.user.id));
                 await interaction.followUp({ content: message, ephemeral: true });
 
-                // Long operation here.... 
+                // Long operation here....
                 console.log('Collected!');
                 function sleep(ms) {
                     return new Promise(resolve => setTimeout(resolve, ms));
                 }
 
                 await sleep(2000);
-                await interaction.followUp({content: 'Hold on! We are making a summary of the news for the section', ephemeral: true });
+                await interaction.followUp({ content: 'Hold on! We are making a summary of the news for the section', ephemeral: true });
 
             })
             .catch(err => {
-                console.log(`No modal submit interaction was collected: ${err}`)
+                console.log(`No modal submit interaction was collected: ${err.toString()}`);
             });
     //     const collector = interaction.channel.createMessageComponentCollector({ filter });
     //     collector.on('collect', async i => {
     //         console.log(`Collected ${i}`);
     //         // await i.update({ content: 'A button was clicked!', components: [] });
     //     });
-    //     collector.on('end', collected => { 
+    //     collector.on('end', collected => {
     //         console.log(`Collected ${collected.size} items`);
     //     });
     },
