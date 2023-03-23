@@ -4,7 +4,7 @@
 // - https://www.youtube.com/watch?v=wlMCDXf2b4E
 //
 // The embed from Discohook should be copied by clicking on 'JSON Data Editor'
-// and entered in the command prompt together 
+// and entered in the command prompt together
 //
 // /////////////////////////////////////////////////////////////////////////////////
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
@@ -220,7 +220,7 @@ async function postWebhook(interaction) {
 	// 	await i.update({ content: 'A button was clicked!', components: [] });
 	// });
 
-	// collector.on('end', collected => { 
+	// collector.on('end', collected => {
 	// 	console.log(`Collected ${collected.size} items`);
 	// });
 }
