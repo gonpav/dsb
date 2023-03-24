@@ -9,6 +9,11 @@ const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBu
 const { channelMention, userMention, inlineCode } = require('discord.js');
 const MsgConstants = require('./msg-constants.js');
 
+// Constants
+const BTN_VYKLYK_REGISTER_PREFIX = 'btn_global_register_';
+const MODAL_FACEIT_REGISTER_PREFIX = 'mdl_register_{0}_faceit_{1}';
+const MODAL_FACEIT_INPUT_PREFIX = 'inp_register_{0}_faceit_{1}';
+
 // Check if user already registered for the Challenge
 function isUserRegistered(userId) {
     if (userId === '1083198956680527992') return false;
@@ -17,19 +22,15 @@ function isUserRegistered(userId) {
 
 module.exports = {
 
-    // Constants
-    BTN_VYKLYK_REGISTER_PREFIX: 'btn_global_register_',
-
-
     // Functions
     isGlobalButton: function(buttonId) {
-        return buttonId.startsWith(this.BTN_VYKLYK_REGISTER_PREFIX);
+        return buttonId.startsWith(BTN_VYKLYK_REGISTER_PREFIX);
     },
     onGlobalButtonInteraction: async function(interaction) {
-        if (interaction.customId.startsWith(this.BTN_VYKLYK_REGISTER_PREFIX)) this.onRegisterVyklykInterection(interaction);
+        if (interaction.customId.startsWith(BTN_VYKLYK_REGISTER_PREFIX)) this.onRegisterVyklykInterection(interaction);
     },
     createVyklykRegisterButtonId: function(channelId) {
-        return `${this.BTN_VYKLYK_REGISTER_PREFIX}${channelId}`;
+        return `${BTN_VYKLYK_REGISTER_PREFIX}${channelId}`;
     },
     onRegisterVyklykInterection: async function(interaction) {
         // console.log(interaction);
@@ -73,7 +74,8 @@ module.exports = {
 
         // Show message box to enter the Faceit Id
         const MODAL_FACEIT_TITLE = MsgConstants.getMessage(MsgConstants.MDL_FACEIT_TITLE, interaction.locale);
-        const MODAL_FACEIT_REGISTER_ID = `mdl_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
+        const MODAL_FACEIT_REGISTER_ID = MsgConstants.composeString(MODAL_FACEIT_REGISTER_PREFIX, interaction.channel.id, interaction.user.id);
+
 		const modal = new ModalBuilder()
 			.setCustomId(MODAL_FACEIT_REGISTER_ID)
 			.setTitle(MODAL_FACEIT_TITLE);
@@ -81,7 +83,8 @@ module.exports = {
 		// Add components to modal
 
 		// Create the text input components
-        const MODAL_FACEIT_INPUT_ID = `inp_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
+        // const MODAL_FACEIT_INPUT_ID = `inp_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
+        const MODAL_FACEIT_INPUT_ID = MsgConstants.composeString(MODAL_FACEIT_INPUT_PREFIX, interaction.channel.id, interaction.user.id);
 		const faceitNicknameInput = new TextInputBuilder()
 			.setCustomId(MODAL_FACEIT_INPUT_ID)
 			.setLabel(MsgConstants.getMessage(MsgConstants.MDL_FACEIT_LABEL, interaction.locale))

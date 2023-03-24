@@ -65,6 +65,7 @@ module.exports = {
 
     // Functions
     getMessage: getMessage,
+    composeString: composeString,
     // getMessage: function(messageId, locale, ...args) {
     //     if (!locale) return messageId['en-US'];
     //     return messageId[locale] ?? messageId['en-US'];
