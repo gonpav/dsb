@@ -6,7 +6,7 @@
 // /////////////////////////////////////////////////////////////////////////////////
 
 const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const { channelMention, userMention } = require('discord.js');
+const { channelMention, userMention, inlineCode } = require('discord.js');
 const MsgConstants = require('./msg-constants.js');
 
 // Check if user already registered for the Challenge
@@ -73,17 +73,17 @@ module.exports = {
 
         // Show message box to enter the Faceit Id
         const MODAL_FACEIT_TITLE = MsgConstants.getMessage(MsgConstants.MDL_FACEIT_TITLE, interaction.locale);
-        const MODAL_FACEIT_REGISTER = `mdl_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
+        const MODAL_FACEIT_REGISTER_ID = `mdl_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
 		const modal = new ModalBuilder()
-			.setCustomId(MODAL_FACEIT_REGISTER)
+			.setCustomId(MODAL_FACEIT_REGISTER_ID)
 			.setTitle(MODAL_FACEIT_TITLE);
 
 		// Add components to modal
 
 		// Create the text input components
-        const MODAL_FACEIT_INPUT = `inp_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
+        const MODAL_FACEIT_INPUT_ID = `inp_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
 		const faceitNicknameInput = new TextInputBuilder()
-			.setCustomId(MODAL_FACEIT_INPUT)
+			.setCustomId(MODAL_FACEIT_INPUT_ID)
 			.setLabel(MsgConstants.getMessage(MsgConstants.MDL_FACEIT_LABEL, interaction.locale))
             .setPlaceholder(MsgConstants.getMessage(MsgConstants.MDL_FACEIT_PLACEHOLDER, interaction.locale))
 			.setStyle(TextInputStyle.Paragraph); // Short means only a single line of text
@@ -98,23 +98,38 @@ module.exports = {
 		// Show the modal to the user
         await interaction.showModal(modal);
 
-        const filter = i => {
-            i.deferUpdate();
-            return i.customId === MODAL_FACEIT_REGISTER && i.user.id === interaction.user.id;
+        // As for Defer Update, then  see this post by Bing chat:
+        // https://sl.bing.net/d3a9JTncd4e
+        const filter = async i => {
+            await i.deferUpdate();
+            return i.customId === MODAL_FACEIT_REGISTER_ID && i.user.id === interaction.user.id;
         };
+        // const filterSync = i => {
+        //     i.deferUpdate(); 
+        //     return i.customId === MODAL_FACEIT_REGISTER && i.user.id === interaction.user.id;
+        // };
         interaction.awaitModalSubmit({ time: 600_000, filter })
-            .then(async () => {
-                const message = MsgConstants.getMessage(MsgConstants.CHALLENGE_SUBMISSION_SUCCESS, interaction.locale, userMention(interaction.user.id));
-                await interaction.followUp({ content: message, ephemeral: true });
+            .then(async (i) => {
+                const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
+                const message = MsgConstants.getMessage(
+                    MsgConstants.CHALLENGE_SUBMISSION_SUCCESS, 
+                    interaction.locale,
+                    userMention(i.user.id),
+                    inlineCode(faceitNickname));
+                // await interaction.followUp({ content: message, ephemeral: true });
 
                 // Long operation here....
-                console.log('Collected!');
+                console.log(message);
+                // console.log(`Collected ${faceitNickname} from ${i.user.tag}`);
+
+                // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+                await i.followUp({ content: message, ephemeral: true }); // Use this if i.deferUpdate(); in filter
                 function sleep(ms) {
                     return new Promise(resolve => setTimeout(resolve, ms));
                 }
 
                 await sleep(2000);
-                await interaction.followUp({ content: 'Hold on! We are making a summary of the news for the section', ephemeral: true });
+                await i.followUp({ content: 'Hold on! We are continue processing your request', ephemeral: true });
 
             })
             .catch(err => {

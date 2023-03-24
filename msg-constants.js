@@ -27,8 +27,8 @@ const MDL_FACEIT_PLACEHOLDER = {
 };
 
 const CHALLENGE_SUBMISSION_SUCCESS = {
-    'en-US': '{0}, thank you for your submission. We will review it soon and let you know if you are accepted!',
-    'ru': '{0}, ваш запрос на регистрацию добавлен. Мы его вскоре рассмотрим и уведомим вас о решении!',
+    'en-US': '{0}, thank you for submitting your Faceit nickname: {1}. We will review your sumbission soon and let you know if you are accepted!',
+    'ru': '{0}, спасибо за то, что указали ваш Faceit никнейм: {1}. Ваш запрос на регистрацию добавлен. Мы его вскоре рассмотрим и уведомим вас о решении!',
 };
 
 // Example:
@@ -51,7 +51,7 @@ function getMessageByLocale(messageId, locale) {
 }
 
 function getMessage(messageId, locale, ...args) {
-    return composeString(getMessageByLocale(messageId, locale), args);
+    return composeString(getMessageByLocale(messageId, locale), ...args);
 }
 
 module.exports = {
