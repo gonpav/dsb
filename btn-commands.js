@@ -105,14 +105,14 @@ module.exports = {
             return i.customId === MODAL_FACEIT_REGISTER_ID && i.user.id === interaction.user.id;
         };
         // const filterSync = i => {
-        //     i.deferUpdate(); 
+        //     i.deferUpdate();
         //     return i.customId === MODAL_FACEIT_REGISTER && i.user.id === interaction.user.id;
         // };
         interaction.awaitModalSubmit({ time: 600_000, filter })
             .then(async (i) => {
                 const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
                 const message = MsgConstants.getMessage(
-                    MsgConstants.CHALLENGE_SUBMISSION_SUCCESS, 
+                    MsgConstants.CHALLENGE_SUBMISSION_SUCCESS,
                     interaction.locale,
                     userMention(i.user.id),
                     inlineCode(faceitNickname));
