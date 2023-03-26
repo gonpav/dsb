@@ -5,6 +5,21 @@
 //
 // /////////////////////////////////////////////////////////////////////////////////
 
+// Create Vyklyk
+const MDL_CREATE_VYKLYK_TITLE = { 'en-US': 'Create Vyklyk' };
+const MDL_CREATE_VYKLYK_CHANNEL_LABEL = { 'en-US': 'Channel name' };
+const MDL_CREATE_VYKLYK_CHANNEL_PLACEHOLDER = { 'en-US': 'Enter channel name without spaces' };
+const MDL_CREATE_VYKLYK_TOPIC_LABEL = { 'en-US': 'Channel topic' };
+const MDL_CREATE_VYKLYK_TOPIC_PLACEHOLDER = { 'en-US': 'Use the title from discohook.org. It will be extended with the link to the first message' };
+const MDL_CREATE_VYKLYK_EMBED_LABEL = { 'en-US': 'Discohook JSON data' };
+const MDL_CREATE_VYKLYK_EMBED_PLACEHOLDER = { 'en-US': 'Copy paste the text from http://discohook.org\'s JSON Data Editor' };
+const MDL_CREATE_VYKLYK_INCEPTORS_LABEL = { 'en-US': 'Additional inceptors (must be server members)' };
+const MDL_CREATE_VYKLYK_INCEPTORS_PLACEHOLDER = { 'en-US': 'Add more inceptors separated by space' };
+const MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL = { 'en-US': 'Action button title' };
+const MDL_CREATE_VYKLYK_ACCEPT_BTN_PLACEHOLDER = { 'en-US': 'Write your accept challenge button text' };
+
+// Resigter to the Vyklyk
+
 const MSG_REGISTER_ALREADY = {
     'en-US': 'You have been already registered for this challenge!',
     'id': 'Anda telah terdaftar untuk tantangan ini!',
@@ -55,6 +70,19 @@ function getMessage(messageId, locale, ...args) {
 }
 
 module.exports = {
+
+    // Create Vyklyk
+    MDL_CREATE_VYKLYK_TITLE: MDL_CREATE_VYKLYK_TITLE,
+    MDL_CREATE_VYKLYK_CHANNEL_LABEL: MDL_CREATE_VYKLYK_CHANNEL_LABEL,
+    MDL_CREATE_VYKLYK_CHANNEL_PLACEHOLDER: MDL_CREATE_VYKLYK_CHANNEL_PLACEHOLDER,
+    MDL_CREATE_VYKLYK_TOPIC_LABEL: MDL_CREATE_VYKLYK_TOPIC_LABEL,
+    MDL_CREATE_VYKLYK_TOPIC_PLACEHOLDER: MDL_CREATE_VYKLYK_TOPIC_PLACEHOLDER,
+    MDL_CREATE_VYKLYK_EMBED_LABEL: MDL_CREATE_VYKLYK_EMBED_LABEL,
+    MDL_CREATE_VYKLYK_EMBED_PLACEHOLDER: MDL_CREATE_VYKLYK_EMBED_PLACEHOLDER,
+    MDL_CREATE_VYKLYK_INCEPTORS_LABEL: MDL_CREATE_VYKLYK_INCEPTORS_LABEL,
+    MDL_CREATE_VYKLYK_INCEPTORS_PLACEHOLDER: MDL_CREATE_VYKLYK_INCEPTORS_PLACEHOLDER,
+    MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL: MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL,
+    MDL_CREATE_VYKLYK_ACCEPT_BTN_PLACEHOLDER: MDL_CREATE_VYKLYK_ACCEPT_BTN_PLACEHOLDER,
 
     // Resigter to the Challenge Messages
     MSG_REGISTER_ALREADY: MSG_REGISTER_ALREADY,
