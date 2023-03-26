@@ -1,7 +1,15 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { channelMention } = require('discord.js');
+
 const MsgConstants = require('../msg-constants.js');
 
-const { discord_admin_inceptor_role_name } = require('../config.json');
+const { 
+	discord_admin_inceptor_role_name,
+	discord_channel_inceptors_role_name,
+	discord_channel_challengers_role_name,
+	discord_channel_pending_challengers_role_name,
+	discord_channel_banned_role_name 
+} = require('../config.json');
 
 const MODAL_INCEPT_PREFIX = 'mdl_incept_vyklyk_{0}';
 const MODAL_CHANNEL_INPUT_PREFIX = 'inp_channel_name_{0}_{1}';
@@ -9,6 +17,14 @@ const MODAL_TOPIC_INPUT_PREFIX = 'inp_channel_topic_{0}_{1}';
 const MODAL_EMBED_INPUT_PREFIX = 'inp_embed_name_{0}_{1}';
 const MODAL_INCEPTORS_INPUT_PREFIX = 'inp_inceptors_{0}_{1}';
 const MODAL_ACCEPT_BUTTON_INPUT_PREFIX = 'inp_accept_btn_{0}_{1}';
+
+// InceptionException error class;
+class InceptionError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'InceptionException';
+	}
+}
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -55,6 +71,7 @@ module.exports = {
 			.setCustomId(MODAL_EMBED_INPUT_ID)
 			.setLabel(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_EMBED_LABEL, interaction.locale))
 			.setPlaceholder(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_EMBED_PLACEHOLDER, interaction.locale))
+			.setValue(getEmbedTextFromConfig())
 			.setStyle(TextInputStyle.Paragraph);
 
 		const MODAL_INCEPTORS_INPUT_ID = MsgConstants.composeString(MODAL_INCEPTORS_INPUT_PREFIX, interaction.channel.id, interaction.user.id);
@@ -77,7 +94,7 @@ module.exports = {
 			new ActionRowBuilder().addComponents(channelNameInput),
 			new ActionRowBuilder().addComponents(channelTopicInput),
 			new ActionRowBuilder().addComponents(embedInput),
-		 	new ActionRowBuilder().addComponents(inceptorsInput),
+			new ActionRowBuilder().addComponents(inceptorsInput),
 			new ActionRowBuilder().addComponents(acceptButtonNameInput),
 			);
 
@@ -87,9 +104,70 @@ module.exports = {
         // As for Defer Update, then  see this post by Bing chat:
         // https://sl.bing.net/d3a9JTncd4e
         const filter = async i => {
-            await i.deferUpdate();
+            // await i.deferUpdate();
             return i.customId === MODAL_INCEPT_ID && i.user.id === interaction.user.id;
         };
+		interaction.awaitModalSubmit({ time: 600_000, filter })
+			.then(async (i) => {
 
+				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
+				await i.reply({ content: 'Step 1 of N. Validating input. Please wait…', ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+
+				const channelName = validateChannel(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
+				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
+			})
+			.catch(err => {
+				if (err instanceof InceptionError) {
+					interaction.followUp({content: err.message, ephemeral: true});
+				}
+				console.log(`${err.stack.toString()}`);
+			});
 	},
 };
+
+// Helper methods
+
+function getEmbedTextFromConfig() {
+	const fs = require('node:fs');
+	const path = require('node:path');
+
+	const vyklyksPath = path.join(__dirname, '..//vyklyks');
+	const vyklykFiles = fs.readdirSync(vyklyksPath).filter(file => file.endsWith('.json'));
+
+	for (const file of vyklykFiles) {
+		return fs.readFileSync(path.join(vyklyksPath, file), 'utf8').toString();
+	}
+}
+
+function getChannelPermissionNames(channel) {
+	return [
+		MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id),
+		MsgConstants.composeString(discord_channel_challengers_role_name, channel.id),
+		MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id),
+		MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
+}
+
+function validateChannel(interaction, channelName) {
+	try {
+		const channel = interaction.client.channels.cache.find(c => c.name === channelName);
+		if (channel) {
+			throw new InceptionError(MsgConstants.composeString(
+				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
+				channelMention(channel.id), getChannelPermissionNames(channel)));
+		}
+		return channelName;
+	}
+	catch (err) {
+		if (err instanceof InceptionError) throw err;
+		throw new InceptionError(`Error: failed to validate a channel with the name ${channelName}: ${err.toString()}`);		
+	}
+}
+
+function validateEmbed(embedJSON) {
+	try {
+		return JSON.parse(embedJSON);
+	}
+	catch (err) {
+		throw new InceptionError('Error: entered Discohook text is not a valid JSON. Please double check that you entered it correctly from https://discohook.org');
+	}
+}
