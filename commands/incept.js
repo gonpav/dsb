@@ -118,7 +118,6 @@ module.exports = {
 				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
 				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 				const inceptors = await getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
-				console.log(inceptors);
 			})
 			.catch(err => {
 				if (err instanceof InceptionError) {
@@ -195,7 +194,7 @@ async function getMembersByName(interaction, inceptorsNames, validate) {
 		const nonMembers = [];
 		const guildMembers = await interaction.guild.members.fetch(); // Save this in this.GuildMembers
 		inceptorsNames.split(' ').filter(word => word !== '').forEach(inceptorName => {
-			console.log(inceptorName);
+			// console.log(inceptorName);
 			// const member = await guildMembers.fetch({ query: 'gonpav' /*inceptorName*/ });
 			// const member = interaction.guild.members.cache.find(mem => mem.user.username === inceptorName);
 			const member = guildMembers.find(mem => mem.user.username === inceptorName);
