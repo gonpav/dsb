@@ -80,6 +80,7 @@ module.exports = {
 			.setLabel(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_INCEPTORS_LABEL, interaction.locale))
 			.setPlaceholder(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_INCEPTORS_PLACEHOLDER, interaction.locale))
 			.setRequired(false)
+			.setValue('æject leonid    gonpav1 sdfsdfm,     sdfsdf')
 			.setStyle(TextInputStyle.Short);
 
         const MODAL_ACCEPT_INPUT_ID = MsgConstants.composeString(MODAL_ACCEPT_BUTTON_INPUT_PREFIX, interaction.channel.id, interaction.user.id);
@@ -116,6 +117,8 @@ module.exports = {
 				const channelName = validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
 				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
 				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
+				const inceptors = await getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
+				console.log(inceptors);
 			})
 			.catch(err => {
 				if (err instanceof InceptionError) {
@@ -183,4 +186,24 @@ function validateAcceptButton(buttonLabel) {
 		throw new InceptionError (`Error: max text length of the '${MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL, null)}' is ${MAX_BUTTON_LABEL_LENGTH} characters`);
 	}
 	return buttonLabel;
+}
+
+async function getMembersByName(interaction, inceptorsNames, validate) {
+
+	const members = [];
+	if (inceptorsNames) {
+		const nonMembers = [];
+		const guildMembers = await interaction.guild.members.fetch(); // Save this in this.GuildMembers
+		inceptorsNames.split(' ').filter(word => word !== '').forEach(inceptorName => {
+			console.log(inceptorName);
+			// const member = await guildMembers.fetch({ query: 'gonpav' /*inceptorName*/ });
+			// const member = interaction.guild.members.cache.find(mem => mem.user.username === inceptorName);
+			const member = guildMembers.find(mem => mem.user.username === inceptorName);
+			member ? members.push(member) : nonMembers.push(inceptorName);
+		});
+		if (validate && nonMembers.length > 0) {
+			throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
+		}
+	}
+	return members;
 }
