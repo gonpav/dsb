@@ -113,8 +113,9 @@ module.exports = {
 				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
 				await i.reply({ content: 'Step 1 of N. Validating input. Please wait…', ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
 
-				const channelName = validateChannel(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
+				const channelName = validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
 				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
+				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 			})
 			.catch(err => {
 				if (err instanceof InceptionError) {
@@ -147,8 +148,12 @@ function getChannelPermissionNames(channel) {
 		MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
 }
 
-function validateChannel(interaction, channelName) {
+function validateChannelName(interaction, channelName) {
 	try {
+		const MAX_CHANNEL_NAME_LENGTH = 100; // Max channel length in Discord is 100 chars, we stick to this value too
+		if (!channelName || /\s/.test(channelName) || channelName.length > MAX_CHANNEL_NAME_LENGTH) {
+			throw new InceptionError (`Error: please specify correct name of the channel without spaces and length up to ${MAX_CHANNEL_NAME_LENGTH} characters`);
+		}
 		const channel = interaction.client.channels.cache.find(c => c.name === channelName);
 		if (channel) {
 			throw new InceptionError(MsgConstants.composeString(
@@ -170,4 +175,12 @@ function validateEmbed(embedJSON) {
 	catch (err) {
 		throw new InceptionError('Error: entered Discohook text is not a valid JSON. Please double check that you entered it correctly from https://discohook.org');
 	}
+}
+
+function validateAcceptButton(buttonLabel) {
+	const MAX_BUTTON_LABEL_LENGTH = 80; // Max channel length in Discord is 80 chars, we stick to this value too
+	if (!buttonLabel || buttonLabel.length > MAX_BUTTON_LABEL_LENGTH) {
+		throw new InceptionError (`Error: max text length of the '${MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL, null)}' is ${MAX_BUTTON_LABEL_LENGTH} characters`);
+	}
+	return buttonLabel;
 }
