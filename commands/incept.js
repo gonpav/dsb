@@ -166,7 +166,7 @@ function validateChannelName(interaction, channelName) {
 	}
 	catch (err) {
 		if (err instanceof InceptionError) throw err;
-		throw new InceptionError(`Error: failed to validate a channel with the name ${channelName}: ${err.toString()}`);		
+		throw new InceptionError(`Error: failed to validate a channel with the name ${channelName}: ${err.toString()}`);
 	}
 }
 
@@ -187,21 +187,79 @@ function validateAcceptButton(buttonLabel) {
 	return buttonLabel;
 }
 
+// This function gets all members from the server first 
+// and look for entered names. It is NOT using guild.members.cache
+// so potentially it can be a problematic call in the future
 async function getMembersByName(interaction, inceptorsNames, validate) {
 
-	const members = [];
+	let members = [];
 	if (inceptorsNames) {
 		const nonMembers = [];
-		const guildMembers = await interaction.guild.members.fetch(); // Save this in this.GuildMembers
-		inceptorsNames.split(' ').filter(word => word !== '').forEach(inceptorName => {
-			// console.log(inceptorName);
-			// const member = await guildMembers.fetch({ query: 'gonpav' /*inceptorName*/ });
-			// const member = interaction.guild.members.cache.find(mem => mem.user.username === inceptorName);
-			const member = guildMembers.find(mem => mem.user.username === inceptorName);
-			member ? members.push(member) : nonMembers.push(inceptorName);
-		});
-		if (validate && nonMembers.length > 0) {
-			throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
+		const inceptorsInput = inceptorsNames.split(' ').filter(word => word !== '');
+		if (inceptorsInput && inceptorsInput.length > 0) {
+			try {
+				const guildMembers = await interaction.guild.members.fetch(); // Save this in this.GuildMembers
+				inceptorsInput.forEach(inceptorName => {
+					const member = guildMembers.find(mem => (
+						mem.displayName === inceptorName || 	 // GuildMemeber.displayName (which is the nickname on server)
+						// mem.user.username === inceptorName || // This is probably not correct search option
+						mem.user.tag === inceptorName 			 // user.tag (which is the unique user name)
+					));
+					member ? members.push(member) : nonMembers.push(inceptorName);
+				});
+			}
+			catch (err) {
+				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors. (Error details: ${err.toString()})`);
+			}
+			if (validate && nonMembers.length > 0) {
+				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
+			}
+			// Remove duplicates
+			members = members.filter((obj, index, self) => index === self.findIndex((t) => (t.id === obj.id)));
+		}
+	}
+	return members;
+}
+
+// This is an update version of 'getMembersByName' that looks at cache
+// first and then looks on server only for a specifiend member in case
+// it is not found in cache. BUT: it sometimes throws Timeout ERROR!!!
+async function getMembersByNameOptimized(interaction, inceptorsNames, validate) {
+
+	let members = [];
+	if (inceptorsNames) {
+		const nonMembers = [];
+		const inceptorsInput = inceptorsNames.split(' ').filter(word => word !== '');
+		if (inceptorsInput && inceptorsInput.length > 0) {
+			try {
+				for (let i = 0; i < inceptorsInput.length; i++) {
+					const inceptorName = inceptorsInput.at(i);
+					// Watch cache first
+					let member = interaction.guild.members.cache.find(mem => (
+						mem.displayName === inceptorName || 	 // GuildMemeber.displayName (which is the nickname on server)
+						// mem.user.username === inceptorName || // This is probably not correct search option
+						mem.user.tag === inceptorName			 // user.tag (which is the unique user name)
+					));
+					if (!member) {
+						// There are 2 PROBLEMs here:
+						// 1) next call throws Timeout Error sometimes
+						// 2) it assumes to check "mem.user.username === inceptorName" which is not what we want actually
+						const fetchResult = await interaction.guild.members.fetch({ query: inceptorName, force: true });
+						if (fetchResult && fetchResult.size > 0) {
+							member = fetchResult.at(0);
+						}
+					}
+					member ? members.push(member) : nonMembers.push(inceptorName);
+				}
+			}
+			catch (err) {
+				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors. (Error details: ${err.toString()})`);
+			}
+			if (validate && nonMembers.length > 0) {
+				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
+			}
+			// Remove duplicates
+			members = members.filter((obj, index, self) => index === self.findIndex((t) => (t.id === obj.id)));
 		}
 	}
 	return members;
