@@ -1,8 +1,9 @@
-const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { channelMention } = require('discord.js');
-const { discord_admin_inceptor_role_name } = require('../config.json');
+const { discord_vyklyk_webhook, discord_admin_inceptor_role_name } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
+const BtnCommands = require('../btn-commands.js');
 const { VyklykManager, InceptionError } = require('../vyklyk-manager.js');
 
 const MODAL_INCEPT_PREFIX = 'mdl_incept_vyklyk_{0}';
@@ -112,6 +113,7 @@ module.exports = {
 				await VyklykManager.createChannelRoles(interaction, channel);
 
 				await i.followUp({ content: 'All required roles and permissions created.\nStep 4 of N. Creating content. Please wait…', ephemeral: true }); 
+				postWebhook(i, channel, embedObject, acceptLabel);
 			})
 			.catch(async err => {
 				if (err instanceof InceptionError) {
@@ -134,5 +136,37 @@ function getEmbedTextFromConfig() {
 
 	for (const file of vyklykFiles) {
 		return fs.readFileSync(path.join(vyklyksPath, file), 'utf8').toString();
+	}
+}
+
+async function postWebhook(interaction, channel, vyklykData, acceptBtnLabel) {
+
+	try {
+		// Find a web-hook with channel-name-id. If not found then create one
+		const webHookName = MsgConstants.composeString(discord_vyklyk_webhook, channel.id);
+		const webHooks = await channel.fetchWebhooks();
+		let webhookClient = webHooks ? webHooks.find(wh => wh.name === webHookName) : null;
+		if (!webhookClient) {
+			webhookClient = await channel.createWebhook({
+				name: webHookName,
+				avatar: vyklykData.avatar_url,
+			});
+		}
+		// await interaction.followUp({ content: `Webhook id=${webhookClient.id} has been found or created for the channel ${channel.name}`, ephemeral: true });
+
+		const row = new ActionRowBuilder()
+			.addComponents(
+				new ButtonBuilder()
+					.setCustomId(BtnCommands.createVyklykRegisterButtonId(channel.id))
+					.setLabel(acceptBtnLabel)
+					.setStyle(ButtonStyle.Primary),
+				);
+
+		vyklykData.components = [row];
+		await webhookClient.send(vyklykData);
+	}
+	catch (err) {
+		throw new InceptionError (
+			`Error: failed to post content to the channel.\nPlease check the channel manually. Use 'delete' command to delete the channel if required.\nError details: ${err.toString()}`);
 	}
 }
