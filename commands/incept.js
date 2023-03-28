@@ -1,14 +1,21 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { ChannelType, PermissionsBitField } = require('discord.js');
 const { channelMention } = require('discord.js');
+const { discord_vyklyks_category_name } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
+
 
 const { 
 	discord_admin_inceptor_role_name,
 	discord_channel_inceptors_role_name,
+	discord_channel_inceptors_permissions,
 	discord_channel_challengers_role_name,
+	discord_channel_challengers_permissions,
 	discord_channel_pending_challengers_role_name,
-	discord_channel_banned_role_name 
+	discord_channel_pending_challengers_permissions,
+	discord_channel_banned_role_name,
+	discord_channel_banned_permissions
 } = require('../config.json');
 
 const MODAL_INCEPT_PREFIX = 'mdl_incept_vyklyk_{0}';
@@ -20,9 +27,36 @@ const MODAL_ACCEPT_BUTTON_INPUT_PREFIX = 'inp_accept_btn_{0}_{1}';
 
 // InceptionException error class;
 class InceptionError extends Error {
-	constructor(message) {
+	#interaction;
+	#deleteChannel;
+	#roles;
+	constructor(message, interaction = null, deleteChannel = null, roles = null) {
 		super(message);
 		this.name = 'InceptionException';
+		this.#deleteChannel = deleteChannel;
+		this.#interaction = interaction;
+		this.#roles = roles;
+	}
+ 	async cleanup(){
+		if (this.#interaction && this.#deleteChannel) {
+			try {
+				console.log('Outcomment deleting of the channel');
+				this.#roles.forEach(x => this.#cleanupRole(x));
+				await this.#interaction.guild.channels.delete(this.#deleteChannel);
+			}
+			catch (err) {
+				this.message = `${this.message}.\nFailed to delete channel on cleanup: ${err.toString()}`;
+			}
+		}
+	}
+	async #cleanupRole(role) {
+		if (!role) return;
+		try {
+			await this.#interaction.guild.roles.delete(role);
+		}
+		catch (err) {
+			this.message = `${this.message}.\nFailed to delete role '${role.name}' on cleanup. Please delete it MANUALLY: ${err.toString()}`;
+		}		
 	}
 }
 
@@ -80,7 +114,7 @@ module.exports = {
 			.setLabel(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_INCEPTORS_LABEL, interaction.locale))
 			.setPlaceholder(MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_INCEPTORS_PLACEHOLDER, interaction.locale))
 			.setRequired(false)
-			.setValue('æject leonid    gonpav1 sdfsdfm,     sdfsdf')
+			// .setValue('æject leonid    gonpav1 sdfsdfm,     sdfsdf')
 			.setStyle(TextInputStyle.Short);
 
         const MODAL_ACCEPT_INPUT_ID = MsgConstants.composeString(MODAL_ACCEPT_BUTTON_INPUT_PREFIX, interaction.channel.id, interaction.user.id);
@@ -118,10 +152,17 @@ module.exports = {
 				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
 				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 				const inceptors = await getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
+
+				await i.followUp({ content: 'Validation succeeded.\nStep 2 of N. Creating channel. Please wait…', ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+				const channel = await createChannel(interaction, channelName);
+
+				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of N. Setting up permissions. Please wait…`, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+				await createChannelRoles(interaction, channel);
 			})
-			.catch(err => {
+			.catch(async err => {
 				if (err instanceof InceptionError) {
-					interaction.followUp({content: err.message, ephemeral: true});
+					await err.cleanup();
+					await interaction.followUp({ content: err.message, ephemeral: true });
 				}
 				console.log(`${err.stack.toString()}`);
 			});
@@ -209,7 +250,7 @@ async function getMembersByName(interaction, inceptorsNames, validate) {
 				});
 			}
 			catch (err) {
-				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors. (Error details: ${err.toString()})`);
+				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors.\nError details: ${err.toString()}`);
 			}
 			if (validate && nonMembers.length > 0) {
 				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
@@ -253,7 +294,7 @@ async function getMembersByNameOptimized(interaction, inceptorsNames, validate) 
 				}
 			}
 			catch (err) {
-				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors. (Error details: ${err.toString()})`);
+				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors.\nError details: ${err.toString()}`);
 			}
 			if (validate && nonMembers.length > 0) {
 				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
@@ -263,4 +304,72 @@ async function getMembersByNameOptimized(interaction, inceptorsNames, validate) 
 		}
 	}
 	return members;
+}
+
+async function createChannel(interaction, channelName) {
+	try {
+		const vyklyksCategory = interaction.guild.channels.cache.find(x =>
+			x.type === ChannelType.GuildCategory &&
+			x.name === discord_vyklyks_category_name
+			);
+		const channel = await interaction.guild.channels.create({
+			parent: vyklyksCategory,
+			name: channelName,
+			type: ChannelType.GuildText,
+			permissionOverwrites: [
+				{
+					// Deny ViewChannel for @everybody
+					id: interaction.guild.id,
+					deny: [PermissionsBitField.Flags.ViewChannel],
+				},
+/* 				{
+					// IMPORTANT: outcomment bellow if Vyklyk Bot is not Administrator (however it will not work)
+					// Allow Vyklyk-Bot to manage roles and channel (to add channel roles later)
+					id: interaction.guild.members.me.id,
+					allow: [
+						PermissionsBitField.Flags.ViewChannel, 
+						PermissionsBitField.Flags.ManageChannels,
+						PermissionsBitField.Flags.ManageGuild,   
+						PermissionsBitField.Flags.ManageRoles,  // ONLY works when Vyklyk Bot is Administrator
+						],
+				},*/
+			],
+		});
+		return channel;
+	}
+	catch (err) {
+		throw new InceptionError (`Error: failed to create a channel with the name: ${channelName}.\nError details: ${err.toString()}`);
+	}
+}
+
+async function createChannelRoles(interaction, channel) {
+	const roles = [];
+	try {
+		// discord_channel_inceptors_role_name,
+		let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
+		roles.push(role);	
+		await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
+
+		// discord_channel_challengers_role_name
+		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
+		roles.push(role);	
+		await channel.permissionOverwrites.create(role.id, discord_channel_challengers_permissions);
+
+		// discord_channel_pending_challengers_role_name
+		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
+		roles.push(role);	
+		await channel.permissionOverwrites.create(role.id, discord_channel_pending_challengers_permissions);
+
+		// discord_channel_banned_role_name
+		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_banned_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
+		roles.push(role);	
+		await channel.permissionOverwrites.create(role.id, discord_channel_banned_permissions);
+
+		return roles;
+	} 
+	catch (err) {
+		throw new InceptionError (
+			`Error: failed to setup permissions for the channel.\nError details: ${err.toString()}`,
+			interaction, channel, roles);
+	}
 }
