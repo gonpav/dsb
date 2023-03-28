@@ -174,7 +174,8 @@ class VyklykManager {
             roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
             // add interaction member to inceptors_role
-            interaction.member.roles.add(role);
+            // interaction.member.roles.add(role);
+            VyklykManager.tryAddMemeberToRole(interaction.member, role);
 
             // discord_channel_challengers_role_name
             role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
@@ -210,8 +211,18 @@ class VyklykManager {
 		}
     }
 
+    static async tryAddMemeberToRole(member, role){
+        try {
+            await member.roles.add(role);
+            return null;
+        }
+        catch (err) {
+            return err;
+        }
+    }
+
     static async getChannelRoles(interaction, channel) {
-        const rolesNames = VyklykManager.getChannelPermissionRoleNames(channel.id);
+        const rolesNames = VyklykManager.getChannelRolesNames(channel.id);
         return /*await*/ interaction.guild.roles.cache.filter((role) => rolesNames.includes(role.name));
     }
 
@@ -227,12 +238,16 @@ class VyklykManager {
         return published;
     }
     
-    static getChannelPermissionRoleNames(channelId) {
+    static getChannelRolesNames(channelId) {
         return [
             MsgConstants.composeString(discord_channel_inceptors_role_name, channelId),
             MsgConstants.composeString(discord_channel_challengers_role_name, channelId),
             MsgConstants.composeString(discord_channel_pending_challengers_role_name, channelId),
             MsgConstants.composeString(discord_channel_banned_role_name, channelId)];
+    }
+
+    static getChannelInceptorRoleName(channelId) {
+        return MsgConstants.composeString(discord_channel_inceptors_role_name, channelId);
     }
 
     static getVyklyksChannelCategory (interaction) {

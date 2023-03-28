@@ -41,14 +41,14 @@ module.exports = {
 		// If the channel is not found, return
 		if (!channel) {
 			return await interaction.followUp({
-				content: `Error cannot find the channel with specified id. Please find and delete channel MANUALY and also delete all associated roles on server: ${VyklykManager.getChannelPermissionRoleNames(channelId)}`,
+				content: `Error cannot find the channel with specified id. Please find and delete channel MANUALY and also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
 				ephemeral: true });
 		}
 
 		// check: server is not published yet
 		if (await VyklykManager.channelIsPublished (interaction, channel)) {
 			return await interaction.followUp({
-				content: `The vyklyk was published. Cannot delete published channel. If you will try to delete it MANUALY, then also delete all associated roles on server: ${VyklykManager.getChannelPermissionRoleNames(channelId)}`,
+				content: `The vyklyk was published. Cannot delete published channel. If you will try to delete it MANUALY, then also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
 				ephemeral: true });
 		}
 		// check: channel is under VYKLYKs category
@@ -63,7 +63,7 @@ module.exports = {
 
 		// interaction.guild is the object representing the Guild in which the command was run
 		if (interaction.channel.id !== channelId) {
-			await interaction.followUp(`SUCCESS: the channel '${channelName}' was deleted.\nPlease double check in server settings that following roles were deleted too: ${VyklykManager.getChannelPermissionRoleNames(channelId)}`);
+			await interaction.followUp(`SUCCESS: the channel '${channelName}' was deleted.\nPlease double check in server settings that following roles were deleted too: ${VyklykManager.getChannelRolesNames(channelId)}`);
 		}
 	},
 };

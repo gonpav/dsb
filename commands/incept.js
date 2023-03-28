@@ -111,13 +111,36 @@ module.exports = {
 				const channel = await VyklykManager.createChannel(interaction, channelName);
 
 				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of ${steps}. Setting up permissions. Please wait…`, ephemeral: true });
-				await VyklykManager.createChannelRoles(interaction, channel);
+				const roles = await VyklykManager.createChannelRoles(interaction, channel);
 
 				await i.followUp({ content: `All required roles and permissions created.\nStep 4 of ${steps}. Creating content. Please wait…`, ephemeral: true });
-				postWebhook(i, channel, embedObject, acceptLabel);
+				await postWebhook(channel, embedObject, acceptLabel);
 
 				await i.followUp({ content: `Vyklyk content created successfully.\nStep 5 of ${steps}. Updating channel topic. Please wait…`, ephemeral: true });
+				let errCount = 0;
+				let err = await setChannelTopic(channel, i.fields.getTextInputValue(MODAL_TOPIC_INPUT_ID), true);
+				if (err) {
+					errCount++;
+					await i.followUp({ content: `Non-critical Error: failed to add channel topic and/or pin the first message. Please do this manually. \nError details: ${err.toString()}\nStep 6 of ${steps}. Adding additional inceptors. Please wait…`, ephemeral: true });
+				}
+				else {
+					await i.followUp({ content: `Channel topic updated successfully.\nStep 6 of ${steps}. Adding additional inceptors. Please wait…`, ephemeral: true });
+				}
+				const inceptorRole = roles.find(x => x.name === VyklykManager.getChannelInceptorRoleName(channel.id));
+				inceptors.forEach(async (inceptor) => {
+					err = await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
+					if (err) {
+						errCount++;
+						await i.followUp({ content: `Non-critical Error: failed to add '${inceptor.displayName}' to the role '${inceptorRole.name}'. Please do this manually. \nError details: ${err.toString()}`, ephemeral: true });
+					}
+				});
 
+				if (errCount > 0) {
+					await i.followUp({ content: `Vyklyk ${channelMention(channel.id)} was created with ${errCount} errors. Please go over 'Non-critical Error' messages for review.\nIf you would like to start over then we recommend to '/delete' this vyklyk first.`, ephemeral: true });
+				}
+				else {
+					await i.followUp({ content: `Vykluk ${channelMention(channel.id)} successfully created. It is not published yet for your review.`, ephemeral: true });
+				}
 			})
 			.catch(async err => {
 				if (err instanceof InceptionError) {
@@ -153,7 +176,7 @@ function validateChannelName(interaction, channelName) {
 		if (channel) {
 			throw new InceptionError(MsgConstants.composeString(
 				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
-				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel.id)));
+				channelMention(channel.id), VyklykManager.getChannelRolesNames(channel.id)));
 		}
 		return channelName;
 	}
@@ -180,7 +203,7 @@ function validateAcceptButton(buttonLabel) {
 	return buttonLabel;
 }
 
-async function postWebhook(interaction, channel, vyklykData, acceptBtnLabel) {
+async function postWebhook(channel, vyklykData, acceptBtnLabel) {
 
 	try {
 		// Find a web-hook with channel-name-id. If not found then create one
@@ -210,4 +233,19 @@ async function postWebhook(interaction, channel, vyklykData, acceptBtnLabel) {
 		throw new InceptionError (
 			`Error: failed to post content to the channel.\nPlease check the channel manually. Use 'delete' command to delete the channel if required.\nError details: ${err.toString()}`);
 	}
+}
+
+async function setChannelTopic(channel, topicText) {
+	if (topicText && topicText.length > 0) {
+		try {
+			const messages = await channel.messages.fetch({ limit: 1 });
+			const firstMessage = messages.first();
+			await channel.setTopic(`${topicText} ${firstMessage.url}`);
+			await channel.messages.pin(firstMessage);
+		}
+		catch (err) {
+			return err;
+		}
+	}
+	return null;
 }
