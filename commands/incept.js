@@ -102,9 +102,9 @@ module.exports = {
 				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
 				await i.reply({ content: `Step 1 of ${steps}. Validating input. Please wait…`, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
 
-				const channelName = VyklykManager.validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
-				const embedObject = VyklykManager.validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
-				const acceptLabel = VyklykManager.validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
+				const channelName = validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
+				const embedObject = validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
+				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 				const inceptors = await VyklykManager.getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
 
 				await i.followUp({ content: `Validation succeeded.\nStep 2 of ${steps}. Creating channel. Please wait…`, ephemeral: true }); 
@@ -141,6 +141,43 @@ function getEmbedTextFromConfig() {
 	for (const file of vyklykFiles) {
 		return fs.readFileSync(path.join(vyklyksPath, file), 'utf8').toString();
 	}
+}
+
+function validateChannelName(interaction, channelName) {
+	try {
+		const MAX_CHANNEL_NAME_LENGTH = 100; // Max channel length in Discord is 100 chars, we stick to this value too
+		if (!channelName || /\s/.test(channelName) || channelName.length > MAX_CHANNEL_NAME_LENGTH) {
+			throw new InceptionError (`Error: please specify correct name of the channel without spaces and length up to ${MAX_CHANNEL_NAME_LENGTH} characters`);
+		}
+		const channel = interaction.client.channels.cache.find(c => c.name === channelName);
+		if (channel) {
+			throw new InceptionError(MsgConstants.composeString(
+				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
+				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel.id)));
+		}
+		return channelName;
+	}
+	catch (err) {
+		if (err instanceof InceptionError) throw err;
+		throw new InceptionError(`Error: failed to validate a channel with the name ${channelName}: ${err.toString()}`);
+	}
+}
+
+function validateEmbed(embedJSON) {
+	try {
+		return JSON.parse(embedJSON);
+	}
+	catch (err) {
+		throw new InceptionError('Error: entered Discohook text is not a valid JSON. Please double check that you entered it correctly from https://discohook.org');
+	}
+}
+
+function validateAcceptButton(buttonLabel) {
+	const MAX_BUTTON_LABEL_LENGTH = 80; // Max channel length in Discord is 80 chars, we stick to this value too
+	if (!buttonLabel || buttonLabel.length > MAX_BUTTON_LABEL_LENGTH) {
+		throw new InceptionError (`Error: max text length of the '${MsgConstants.getMessage(MsgConstants.MDL_CREATE_VYKLYK_ACCEPT_BTN_LABEL, null)}' is ${MAX_BUTTON_LABEL_LENGTH} characters`);
+	}
+	return buttonLabel;
 }
 
 async function postWebhook(interaction, channel, vyklykData, acceptBtnLabel) {
