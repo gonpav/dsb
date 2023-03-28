@@ -4,7 +4,7 @@ const { channelMention } = require('discord.js');
 const { discord_vyklyks_category_name } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
-const InceptionError = require('../vyklyk-manager.js');
+const { VyklykManager, InceptionError } = require('../vyklyk-manager.js');
 
 const {
 	discord_admin_inceptor_role_name,
@@ -148,14 +148,6 @@ function getEmbedTextFromConfig() {
 	}
 }
 
-function getChannelPermissionNames(channel) {
-	return [
-		MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_challengers_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
-}
-
 function validateChannelName(interaction, channelName) {
 	try {
 		const MAX_CHANNEL_NAME_LENGTH = 100; // Max channel length in Discord is 100 chars, we stick to this value too
@@ -166,7 +158,7 @@ function validateChannelName(interaction, channelName) {
 		if (channel) {
 			throw new InceptionError(MsgConstants.composeString(
 				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
-				channelMention(channel.id), getChannelPermissionNames(channel)));
+				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel)));
 		}
 		return channelName;
 	}
@@ -312,10 +304,10 @@ async function createChannelRoles(interaction, channel) {
 	try {
 		// discord_channel_inceptors_role_name,
 		let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-		roles.push(role);	
+		roles.push(role);
 		await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
 		// add interaction member to inceptors_role
-	 	interaction.member.roles.add(role);
+		interaction.member.roles.add(role);
 
 		// discord_channel_challengers_role_name
 		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	

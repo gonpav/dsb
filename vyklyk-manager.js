@@ -30,8 +30,10 @@ class InceptionError extends Error {
  	async cleanup(){
 		if (this.#interaction && this.#deleteChannel) {
 			try {
-				console.log('Outcomment deleting of the channel');
-				this.#roles.forEach(x => this.#cleanupRole(x));
+				// console.log('Outcomment deleting of the channel');
+                if (this.#roles) {
+				    this.#roles.forEach(x => this.#cleanupRole(x));
+                }
 				await this.#interaction.guild.channels.delete(this.#deleteChannel);
 			}
 			catch (err) {
@@ -51,6 +53,42 @@ class InceptionError extends Error {
 }
 
 class VyklykManager {
+    constructor () {}
+
+    static async deleteChannel(interaction, channel) {
+		if (interaction && channel) {
+            const roles = await VyklykManager.getChannelRoles(interaction, channel);
+            if (roles) {
+                roles.forEach(x => this.deleteRole(interaction, x));
+            }
+            await interaction.guild.channels.delete(channel);
+		}
+    }
+
+    static async getChannelRoles(interaction, channel) {
+        const rolesNames = VyklykManager.getChannelPermissionRoleNames(channel);
+        return /*await*/ interaction.guild.roles.cache.filter((role) => rolesNames.includes(role.name));
+    }
+
+    static async deleteRole(interaction, role) {
+        if (!role) return;
+        await interaction.guild.roles.delete(role);
+    }
+
+    static async channelIsPublished(interaction, channel) {
+        // For now we just check if ViewChannel is open for everyone
+        const published = await channel.permissionsFor(interaction.guild.id).has(PermissionsBitField.Flags.ViewChannel);
+        console.log(`Published: ${published}`);
+        return published;
+    }
+    
+    static getChannelPermissionRoleNames(channel) {
+        return [
+            MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id),
+            MsgConstants.composeString(discord_channel_challengers_role_name, channel.id),
+            MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id),
+            MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
+    }
 }
 
 module.exports = {
@@ -59,14 +97,6 @@ module.exports = {
 };
 
 // Helper methods
-
-function getChannelPermissionNames(channel) {
-	return [
-		MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_challengers_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id),
-		MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
-}
 
 function validateChannelName(interaction, channelName) {
 	try {
@@ -78,7 +108,7 @@ function validateChannelName(interaction, channelName) {
 		if (channel) {
 			throw new InceptionError(MsgConstants.composeString(
 				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
-				channelMention(channel.id), getChannelPermissionNames(channel)));
+				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel)));
 		}
 		return channelName;
 	}
