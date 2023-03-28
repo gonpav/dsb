@@ -66,7 +66,7 @@ class VyklykManager {
     }
 
     static async getChannelRoles(interaction, channel) {
-        const rolesNames = VyklykManager.getChannelPermissionRoleNames(channel);
+        const rolesNames = VyklykManager.getChannelPermissionRoleNames(channel.id);
         return /*await*/ interaction.guild.roles.cache.filter((role) => rolesNames.includes(role.name));
     }
 
@@ -82,12 +82,22 @@ class VyklykManager {
         return published;
     }
     
-    static getChannelPermissionRoleNames(channel) {
+    static getChannelPermissionRoleNames(channelId) {
         return [
-            MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id),
-            MsgConstants.composeString(discord_channel_challengers_role_name, channel.id),
-            MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id),
-            MsgConstants.composeString(discord_channel_banned_role_name, channel.id)];
+            MsgConstants.composeString(discord_channel_inceptors_role_name, channelId),
+            MsgConstants.composeString(discord_channel_challengers_role_name, channelId),
+            MsgConstants.composeString(discord_channel_pending_challengers_role_name, channelId),
+            MsgConstants.composeString(discord_channel_banned_role_name, channelId)];
+    }
+
+    static getVyklyksChannelCategory (interaction) {
+        return interaction.guild.channels.cache.find(x => 
+            x.type === ChannelType.GuildCategory && x.name === discord_vyklyks_category_name );        
+    }
+
+    static isVyklykChannel (interaction, channel) {
+        const vyklyksCategory =  VyklykManager.getVyklyksChannelCategory(interaction)
+        return (channel.parent && channel.parent.id === vyklyksCategory.id); 
     }
 }
 
@@ -108,7 +118,7 @@ function validateChannelName(interaction, channelName) {
 		if (channel) {
 			throw new InceptionError(MsgConstants.composeString(
 				'Error: channel with the name {0} already exists. If you do want to modify it, then do it manually signed in as “inceptor". If you want to delete it, then also delete all associated roles on server: {1}',
-				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel)));
+				channelMention(channel.id), VyklykManager.getChannelPermissionRoleNames(channel.id)));
 		}
 		return channelName;
 	}
@@ -215,10 +225,7 @@ async function getMembersByNameOptimized(interaction, inceptorsNames, validate) 
 
 async function createChannel(interaction, channelName) {
 	try {
-		const vyklyksCategory = interaction.guild.channels.cache.find(x =>
-			x.type === ChannelType.GuildCategory &&
-			x.name === discord_vyklyks_category_name
-			);
+		const vyklyksCategory = VyklykManager.getVyklyksChannelCategory(interaction);
 		const channel = await interaction.guild.channels.create({
 			parent: vyklyksCategory,
 			name: channelName,
