@@ -98,22 +98,26 @@ module.exports = {
 		interaction.awaitModalSubmit({ time: 600_000, filter })
 			.then(async (i) => {
 
+				const steps = 'N';
 				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
-				await i.reply({ content: 'Step 1 of N. Validating input. Please wait…', ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+				await i.reply({ content: `Step 1 of ${steps}. Validating input. Please wait…`, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
 
 				const channelName = VyklykManager.validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
 				const embedObject = VyklykManager.validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
 				const acceptLabel = VyklykManager.validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 				const inceptors = await VyklykManager.getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
 
-				await i.followUp({ content: 'Validation succeeded.\nStep 2 of N. Creating channel. Please wait…', ephemeral: true }); 
+				await i.followUp({ content: `Validation succeeded.\nStep 2 of ${steps}. Creating channel. Please wait…`, ephemeral: true }); 
 				const channel = await VyklykManager.createChannel(interaction, channelName);
 
-				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of N. Setting up permissions. Please wait…`, ephemeral: true });
+				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of ${steps}. Setting up permissions. Please wait…`, ephemeral: true });
 				await VyklykManager.createChannelRoles(interaction, channel);
 
-				await i.followUp({ content: 'All required roles and permissions created.\nStep 4 of N. Creating content. Please wait…', ephemeral: true }); 
+				await i.followUp({ content: `All required roles and permissions created.\nStep 4 of ${steps}. Creating content. Please wait…`, ephemeral: true });
 				postWebhook(i, channel, embedObject, acceptLabel);
+
+				await i.followUp({ content: `Vyklyk content created successfully.\nStep 5 of ${steps}. Updating channel topic. Please wait…`, ephemeral: true });
+
 			})
 			.catch(async err => {
 				if (err instanceof InceptionError) {
