@@ -98,7 +98,7 @@ module.exports = {
 		interaction.awaitModalSubmit({ time: 600_000, filter })
 			.then(async (i) => {
 
-				const steps = 'N';
+				const steps = '6';
 				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
 				await i.reply({ content: `Step 1 of ${steps}. Validating input. Please wait…`, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
 
@@ -126,6 +126,7 @@ module.exports = {
 				else {
 					await i.followUp({ content: `Channel topic updated successfully.\nStep 6 of ${steps}. Adding additional inceptors. Please wait…`, ephemeral: true });
 				}
+
 				const inceptorRole = roles.find(x => x.name === VyklykManager.getChannelInceptorRoleName(channel.id));
 				inceptors.forEach(async (inceptor) => {
 					err = await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
@@ -139,7 +140,7 @@ module.exports = {
 					await i.followUp({ content: `Vyklyk ${channelMention(channel.id)} was created with ${errCount} errors. Please go over 'Non-critical Error' messages for review.\nIf you would like to start over then we recommend to '/delete' this vyklyk first.`, ephemeral: true });
 				}
 				else {
-					await i.followUp({ content: `Vykluk ${channelMention(channel.id)} successfully created. It is not published yet for your review.`, ephemeral: true });
+					await i.followUp({ content: `Vyklyk ${channelMention(channel.id)} successfully created. It is not published yet for your review.`, ephemeral: true });
 				}
 			})
 			.catch(async err => {
