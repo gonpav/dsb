@@ -349,6 +349,8 @@ async function createChannelRoles(interaction, channel) {
 		let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
 		roles.push(role);	
 		await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
+		// add interaction member to inceptors_role
+	 	interaction.member.roles.add(role);
 
 		// discord_channel_challengers_role_name
 		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
