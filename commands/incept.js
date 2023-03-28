@@ -1,22 +1,9 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
-const { ChannelType, PermissionsBitField } = require('discord.js');
 const { channelMention } = require('discord.js');
-const { discord_vyklyks_category_name } = require('../config.json');
+const { discord_admin_inceptor_role_name } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
 const { VyklykManager, InceptionError } = require('../vyklyk-manager.js');
-
-const {
-	discord_admin_inceptor_role_name,
-	discord_channel_inceptors_role_name,
-	discord_channel_inceptors_permissions,
-	discord_channel_challengers_role_name,
-	discord_channel_challengers_permissions,
-	discord_channel_pending_challengers_role_name,
-	discord_channel_pending_challengers_permissions,
-	discord_channel_banned_role_name,
-	discord_channel_banned_permissions
-} = require('../config.json');
 
 const MODAL_INCEPT_PREFIX = 'mdl_incept_vyklyk_{0}';
 const MODAL_CHANNEL_INPUT_PREFIX = 'inp_channel_name_{0}_{1}';
@@ -116,13 +103,13 @@ module.exports = {
 				const channelName = VyklykManager.validateChannelName(i, i.fields.getTextInputValue(MODAL_CHANNEL_INPUT_ID));
 				const embedObject = VyklykManager.validateEmbed(i.fields.getTextInputValue(MODAL_EMBED_INPUT_ID));
 				const acceptLabel = VyklykManager.validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
-				const inceptors = await getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
+				const inceptors = await VyklykManager.getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
 
 				await i.followUp({ content: 'Validation succeeded.\nStep 2 of N. Creating channel. Please wait…', ephemeral: true }); 
-				const channel = await createChannel(interaction, channelName);
+				const channel = await VyklykManager.createChannel(interaction, channelName);
 
 				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of N. Setting up permissions. Please wait…`, ephemeral: true });
-				await createChannelRoles(interaction, channel);
+				await VyklykManager.createChannelRoles(interaction, channel);
 
 				await i.followUp({ content: 'All required roles and permissions created.\nStep 4 of N. Creating content. Please wait…', ephemeral: true }); 
 			})
@@ -147,150 +134,5 @@ function getEmbedTextFromConfig() {
 
 	for (const file of vyklykFiles) {
 		return fs.readFileSync(path.join(vyklyksPath, file), 'utf8').toString();
-	}
-}
-
-// This function gets all members from the server first 
-// and look for entered names. It is NOT using guild.members.cache
-// so potentially it can be a problematic call in the future
-async function getMembersByName(interaction, inceptorsNames, validate) {
-
-	let members = [];
-	if (inceptorsNames) {
-		const nonMembers = [];
-		const inceptorsInput = inceptorsNames.split(' ').filter(word => word !== '');
-		if (inceptorsInput && inceptorsInput.length > 0) {
-			try {
-				const guildMembers = await interaction.guild.members.fetch(); // Save this in this.GuildMembers
-				inceptorsInput.forEach(inceptorName => {
-					const member = guildMembers.find(mem => (
-						mem.displayName === inceptorName || 	 // GuildMemeber.displayName (which is the nickname on server)
-						// mem.user.username === inceptorName || // This is probably not correct search option
-						mem.user.tag === inceptorName 			 // user.tag (which is the unique user name)
-					));
-					member ? members.push(member) : nonMembers.push(inceptorName);
-				});
-			}
-			catch (err) {
-				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors.\nError details: ${err.toString()}`);
-			}
-			if (validate && nonMembers.length > 0) {
-				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
-			}
-			// Remove duplicates
-			members = members.filter((obj, index, self) => index === self.findIndex((t) => (t.id === obj.id)));
-		}
-	}
-	return members;
-}
-
-// This is an update version of 'getMembersByName' that looks at cache
-// first and then looks on server only for a specifiend member in case
-// it is not found in cache. BUT: it sometimes throws Timeout ERROR!!!
-async function getMembersByNameOptimized(interaction, inceptorsNames, validate) {
-
-	let members = [];
-	if (inceptorsNames) {
-		const nonMembers = [];
-		const inceptorsInput = inceptorsNames.split(' ').filter(word => word !== '');
-		if (inceptorsInput && inceptorsInput.length > 0) {
-			try {
-				for (let i = 0; i < inceptorsInput.length; i++) {
-					const inceptorName = inceptorsInput.at(i);
-					// Watch cache first
-					let member = interaction.guild.members.cache.find(mem => (
-						mem.displayName === inceptorName || 	 // GuildMemeber.displayName (which is the nickname on server)
-						// mem.user.username === inceptorName || // This is probably not correct search option
-						mem.user.tag === inceptorName			 // user.tag (which is the unique user name)
-					));
-					if (!member) {
-						// There are 2 PROBLEMs here:
-						// 1) next call throws Timeout Error sometimes
-						// 2) it assumes to check "mem.user.username === inceptorName" which is not what we want actually
-						const fetchResult = await interaction.guild.members.fetch({ query: inceptorName, force: true });
-						if (fetchResult && fetchResult.size > 0) {
-							member = fetchResult.at(0);
-						}
-					}
-					member ? members.push(member) : nonMembers.push(inceptorName);
-				}
-			}
-			catch (err) {
-				throw new InceptionError (`Error: failed to access inceptors. Please try again without adding inceptors.\nError details: ${err.toString()}`);
-			}
-			if (validate && nonMembers.length > 0) {
-				throw new InceptionError (MsgConstants.composeString('Error: cannot add these members as inceptors as they are not found on server: {0}', nonMembers));
-			}
-			// Remove duplicates
-			members = members.filter((obj, index, self) => index === self.findIndex((t) => (t.id === obj.id)));
-		}
-	}
-	return members;
-}
-
-async function createChannel(interaction, channelName) {
-	try {
-		const vyklyksCategory = VyklykManager.getVyklyksChannelCategory(interaction);
-		const channel = await interaction.guild.channels.create({
-			parent: vyklyksCategory,
-			name: channelName,
-			type: ChannelType.GuildText,
-			permissionOverwrites: [
-				{
-					// Deny ViewChannel for @everybody
-					id: interaction.guild.id,
-					deny: [PermissionsBitField.Flags.ViewChannel],
-				},
-/* 				{
-					// IMPORTANT: outcomment bellow if Vyklyk Bot is not Administrator (however it will not work)
-					// Allow Vyklyk-Bot to manage roles and channel (to add channel roles later)
-					id: interaction.guild.members.me.id,
-					allow: [
-						PermissionsBitField.Flags.ViewChannel, 
-						PermissionsBitField.Flags.ManageChannels,
-						PermissionsBitField.Flags.ManageGuild,   
-						PermissionsBitField.Flags.ManageRoles,  // ONLY works when Vyklyk Bot is Administrator
-						],
-				},*/
-			],
-		});
-		return channel;
-	}
-	catch (err) {
-		throw new InceptionError (`Error: failed to create a channel with the name: ${channelName}.\nError details: ${err.toString()}`);
-	}
-}
-
-async function createChannelRoles(interaction, channel) {
-	const roles = [];
-	try {
-		// discord_channel_inceptors_role_name,
-		let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-		roles.push(role);
-		await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
-		// add interaction member to inceptors_role
-		interaction.member.roles.add(role);
-
-		// discord_channel_challengers_role_name
-		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-		roles.push(role);	
-		await channel.permissionOverwrites.create(role.id, discord_channel_challengers_permissions);
-
-		// discord_channel_pending_challengers_role_name
-		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-		roles.push(role);	
-		await channel.permissionOverwrites.create(role.id, discord_channel_pending_challengers_permissions);
-
-		// discord_channel_banned_role_name
-		role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_banned_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-		roles.push(role);	
-		await channel.permissionOverwrites.create(role.id, discord_channel_banned_permissions);
-
-		return roles;
-	} 
-	catch (err) {
-		throw new InceptionError (
-			`Error: failed to setup permissions for the channel.\nError details: ${err.toString()}`,
-			interaction, channel, roles);
 	}
 }
