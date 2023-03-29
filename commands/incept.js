@@ -144,8 +144,16 @@ module.exports = {
 				});
 
 				await i.followUp({ content: `${inceptorsAddedCount} additional inceptors added.\nStep 7 of ${steps}. Creating additional threads. Please wait…`, ephemeral: true });
-				await createDiscussionThread(i, channel);
-				await createInceptorsInternalThread(channel, interaction.member, inceptors);
+				err = await createDiscussionThread(i, channel);
+				if (err) {
+					errCount++;
+					await i.followUp({ content: `Non-critical Error: failed to create '${discord_thread_discussion_name}' thread. Please do this manually. \nError details: ${err.toString()}`, ephemeral: true });
+				}
+				err = await createInceptorsInternalThread(channel, interaction.member, inceptors);
+				if (err) {
+					errCount++;
+					await i.followUp({ content: `Non-critical Error: failed to create '${discord_thread_internal_inceptors}' thread. Please do this manually. \nError details: ${err.toString()}`, ephemeral: true });
+				}
 
 				if (errCount > 0) {
 					await i.followUp({ content: `Vyklyk ${channelMention(channel.id)} was created with ${errCount} errors. Please go over 'Non-critical Error' messages for review.\nIf you would like to start over then we recommend to '/delete' this vyklyk first.`, ephemeral: true });
