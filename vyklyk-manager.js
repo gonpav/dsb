@@ -174,7 +174,6 @@ class VyklykManager {
             roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
             // add interaction member to inceptors_role
-            // interaction.member.roles.add(role);
             VyklykManager.tryAddMemeberToRole(interaction.member, role);
 
             // discord_channel_challengers_role_name
@@ -248,6 +247,23 @@ class VyklykManager {
 
     static getChannelInceptorRoleName(channelId) {
         return MsgConstants.composeString(discord_channel_inceptors_role_name, channelId);
+    }
+
+    static isMemberInRole(member, roleName) {
+        return (member.roles.cache.some(role => role.name === roleName));
+    }
+
+    static isMemberInChannelInceptorRole(member, channelId, checkAdminInceptor = true) {
+		const inceptorRoleName = VyklykManager.getChannelInceptorRoleName(channelId);
+
+        // if (!(member.roles.cache.some(role => role.name === inceptorRoleName))) {
+        if (!VyklykManager.isMemberInRole(member, inceptorRoleName)) {
+			// Check Admin Inceptors permissions
+			if (checkAdminInceptor && !(member.roles.cache.some(role => role.name === discord_admin_inceptor_role_name))) {
+				return false;
+			}
+		}
+        return true;
     }
 
     static getVyklyksChannelCategory (interaction) {

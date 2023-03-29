@@ -1,6 +1,11 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { channelMention } = require('discord.js');
-const { discord_vyklyk_webhook, discord_admin_inceptor_role_name } = require('../config.json');
+const { channelMention, userMention, ChannelType } = require('discord.js');
+const {
+	discord_vyklyk_webhook,
+	discord_admin_inceptor_role_name,
+	discord_thread_discussion_name,
+	discord_thread_internal_inceptors
+ } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
 const BtnCommands = require('../btn-commands.js');
@@ -98,7 +103,7 @@ module.exports = {
 		interaction.awaitModalSubmit({ time: 600_000, filter })
 			.then(async (i) => {
 
-				const steps = '6';
+				const steps = '7';
 				// await i.followUp({ content: 'Yey!', ephemeral: true }); // Use this if i.deferUpdate(); in filter
 				await i.reply({ content: `Step 1 of ${steps}. Validating input. Please wait…`, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
 
@@ -127,14 +132,20 @@ module.exports = {
 					await i.followUp({ content: `Channel topic updated successfully.\nStep 6 of ${steps}. Adding additional inceptors. Please wait…`, ephemeral: true });
 				}
 
+				let inceptorsAddedCount = inceptors.length;
 				const inceptorRole = roles.find(x => x.name === VyklykManager.getChannelInceptorRoleName(channel.id));
 				inceptors.forEach(async (inceptor) => {
 					err = await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
 					if (err) {
 						errCount++;
+						inceptorsAddedCount--;
 						await i.followUp({ content: `Non-critical Error: failed to add '${inceptor.displayName}' to the role '${inceptorRole.name}'. Please do this manually. \nError details: ${err.toString()}`, ephemeral: true });
 					}
 				});
+
+				await i.followUp({ content: `${inceptorsAddedCount} additional inceptors added.\nStep 7 of ${steps}. Creating additional threads. Please wait…`, ephemeral: true });
+				await createDiscussionThread(i, channel);
+				await createInceptorsInternalThread(channel, interaction.member, inceptors);
 
 				if (errCount > 0) {
 					await i.followUp({ content: `Vyklyk ${channelMention(channel.id)} was created with ${errCount} errors. Please go over 'Non-critical Error' messages for review.\nIf you would like to start over then we recommend to '/delete' this vyklyk first.`, ephemeral: true });
@@ -249,4 +260,40 @@ async function setChannelTopic(channel, topicText) {
 		}
 	}
 	return null;
+}
+
+async function createDiscussionThread(interaction, channel) {
+	try {
+		const thread = await channel.threads.create({
+			name: discord_thread_discussion_name,
+			autoArchiveDuration: 60,
+			type: ChannelType.PublicThread,
+			reason: 'Open discussion thread for all participants',
+		});
+		// await thread.send(`@everyone who participates! Please join the discussion here!`);
+		return null;
+	}
+	catch (err) {
+		return err;
+	}
+}
+
+async function createInceptorsInternalThread(channel, interactionMember, inceptors) {
+	try {
+		const thread = await channel.threads.create({
+			name: discord_thread_internal_inceptors,
+			autoArchiveDuration: 60,
+			type: ChannelType.PrivateThread,
+			reason: 'Dedicated thread for vyklyk administration',
+		});
+		await thread.members.add(interactionMember);
+		inceptors.forEach(async (inceptor) => {
+			// await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
+			await thread.members.add(inceptor /* interaction.user.id */);
+		});
+		return null;
+	}
+	catch (err) {
+		return err;
+	}
 }

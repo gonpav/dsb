@@ -1,14 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { ChannelType, PermissionsBitField, channelMention } = require('discord.js');
-
-const MsgConstants = require('../msg-constants.js');
-
+const { MsgConstants } = require('../msg-constants.js');
 const { VyklykManager } = require('../vyklyk-manager.js');
-
-const {
-	discord_admin_inceptor_role_name,
-	discord_channel_inceptors_role_name,
-} = require('../config.json');
+const { discord_admin_inceptor_role_name } = require('../config.json');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -26,14 +20,10 @@ module.exports = {
 		const channelId = interaction.options.getString('vyklyk-id');
 
 		// Check: user is in Channel Inceptors role OR in Admin Inceptors role
-		const inceptorRoleName = MsgConstants.composeString(discord_channel_inceptors_role_name, channelId);
-		if (!(interaction.member.roles.cache.some(role => role.name === inceptorRoleName))) {
-			// Check Admin Inceptors permissions
-			if (!(interaction.member.roles.cache.some(role => role.name === discord_admin_inceptor_role_name))) {
-				return await interaction.followUp({
-					content: `You should be a member of '${inceptorRoleName}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
-					ephemeral: true });
-			}
+		if (!VyklykManager.isMemberInChannelInceptorRole (interaction.member, channelId)) {
+			return await interaction.followUp({
+				content: `You should be a member of '${VyklykManager.getChannelInceptorRoleName(channelId)}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
+				ephemeral: true });
 		}
 
 		const channel = await interaction.client.channels.fetch(channelId);//
@@ -59,10 +49,11 @@ module.exports = {
 		}
 
 		const channelName = channel.name;
+		const interactionChannelId = interaction.channel.id;
 		await VyklykManager.deleteChannel (interaction, channel);
 
 		// interaction.guild is the object representing the Guild in which the command was run
-		if (interaction.channel.id !== channelId) {
+		if (interactionChannelId !== channelId) {
 			await interaction.followUp(`SUCCESS: the channel '${channelName}' was deleted.\nPlease double check in server settings that following roles were deleted too: ${VyklykManager.getChannelRolesNames(channelId)}`);
 		}
 	},
