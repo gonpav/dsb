@@ -230,13 +230,19 @@ class VyklykManager {
         await interaction.guild.roles.delete(role);
     }
 
-    static async channelIsPublished(interaction, channel) {
+    static async channelIsPublished(channel) {
         // For now we just check if ViewChannel is open for everyone
-        const published = await channel.permissionsFor(interaction.guild.id).has(PermissionsBitField.Flags.ViewChannel);
-        console.log(`Published: ${published}`);
+        const published = await channel.permissionsFor(channel.guild.id).has(PermissionsBitField.Flags.ViewChannel);
         return published;
     }
     
+    static async publishChannel(channel, publish = true /* pass 'false' to unpublish */) {
+        const published = VyklykManager.channelIsPublished(channel);
+        if (published != publish) {
+            await channel.permissionOverwrites.create(channel.guild.roles.everyone, { ViewChannel: publish });
+        }
+    }
+
     static getChannelRolesNames(channelId) {
         return [
             MsgConstants.composeString(discord_channel_inceptors_role_name, channelId),

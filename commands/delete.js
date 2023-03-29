@@ -1,6 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { ChannelType, PermissionsBitField, channelMention } = require('discord.js');
-const { MsgConstants } = require('../msg-constants.js');
+const { SlashCommandBuilder, channelMention } = require('discord.js');
 const { VyklykManager } = require('../vyklyk-manager.js');
 const { discord_admin_inceptor_role_name } = require('../config.json');
 
@@ -22,7 +20,7 @@ module.exports = {
 		// Check: user is in Channel Inceptors role OR in Admin Inceptors role
 		if (!VyklykManager.isMemberInChannelInceptorRole (interaction.member, channelId)) {
 			return await interaction.followUp({
-				content: `You should be a member of '${VyklykManager.getChannelInceptorRoleName(channelId)}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
+				content: `Error: you should be a member of '${VyklykManager.getChannelInceptorRoleName(channelId)}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
 				ephemeral: true });
 		}
 
@@ -31,14 +29,14 @@ module.exports = {
 		// If the channel is not found, return
 		if (!channel) {
 			return await interaction.followUp({
-				content: `Error cannot find the channel with specified id. Please find and delete channel MANUALY and also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
+				content: `Error: cannot find the channel with specified id. Please find and delete channel MANUALY and also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
 				ephemeral: true });
 		}
 
 		// check: server is not published yet
-		if (await VyklykManager.channelIsPublished (interaction, channel)) {
+		if (await VyklykManager.channelIsPublished (channel)) {
 			return await interaction.followUp({
-				content: `The vyklyk was published. Cannot delete published channel. If you will try to delete it MANUALY, then also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
+				content: `Error: the vyklyk is published. Cannot delete published channel. If you will try to delete it MANUALY, then also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
 				ephemeral: true });
 		}
 		// check: channel is under VYKLYKs category
@@ -54,7 +52,7 @@ module.exports = {
 
 		// interaction.guild is the object representing the Guild in which the command was run
 		if (interactionChannelId !== channelId) {
-			await interaction.followUp(`SUCCESS: the channel '${channelName}' was deleted.\nPlease double check in server settings that following roles were deleted too: ${VyklykManager.getChannelRolesNames(channelId)}`);
+			await interaction.followUp(`Success: the channel '${channelName}' was deleted.\nPlease double check in server settings that following roles were deleted too: ${VyklykManager.getChannelRolesNames(channelId)}`);
 		}
 	},
 };
