@@ -1,7 +1,6 @@
 const { ChannelType, PermissionsBitField } = require('discord.js');
-const { channelMention } = require('discord.js');
 const MsgConstants = require('./msg-constants.js');
-const { 
+const {
     discord_vyklyks_category_name,
 	discord_admin_inceptor_role_name,
 	discord_channel_inceptors_role_name,
@@ -11,7 +10,7 @@ const {
 	discord_channel_pending_challengers_role_name,
 	discord_channel_pending_challengers_permissions,
 	discord_channel_banned_role_name,
-	discord_channel_banned_permissions
+	discord_channel_banned_permissions,
 } = require('./config.json');
 
 
@@ -27,12 +26,13 @@ class InceptionError extends Error {
 		this.#interaction = interaction;
 		this.#roles = roles;
 	}
- 	async cleanup(){
+
+    async cleanup() {
 		if (this.#interaction && this.#deleteChannel) {
 			try {
 				// console.log('Outcomment deleting of the channel');
                 if (this.#roles) {
-				    this.#roles.forEach(x => this.#cleanupRole(x));
+                    this.#roles.forEach(x => this.#cleanupRole(x));
                 }
 				await this.#interaction.guild.channels.delete(this.#deleteChannel);
 			}
@@ -40,7 +40,8 @@ class InceptionError extends Error {
 				this.message = `${this.message}.\nFailed to delete channel on cleanup: ${err.toString()}`;
 			}
 		}
-	}
+    }
+
 	async #cleanupRole(role) {
 		if (!role) return;
 		try {
@@ -48,14 +49,16 @@ class InceptionError extends Error {
 		}
 		catch (err) {
 			this.message = `${this.message}.\nFailed to delete role '${role.name}' on cleanup. Please delete it MANUALLY: ${err.toString()}`;
-		}		
+		}
 	}
 }
 
 class VyklykManager {
-    constructor () {}
+    constructor() {
+        // We leave it empty for now
+    }
 
-    // This function gets all members from the server first 
+    // This function gets all members from the server first
     // and look for entered names. It is NOT using guild.members.cache
     // so potentially it can be a problematic call in the future
     static async getMembersByName(interaction, inceptorsNames, validate) {
@@ -151,9 +154,9 @@ class VyklykManager {
                         // Allow Vyklyk-Bot to manage roles and channel (to add channel roles later)
                         id: interaction.guild.members.me.id,
                         allow: [
-                            PermissionsBitField.Flags.ViewChannel, 
+                            PermissionsBitField.Flags.ViewChannel,
                             PermissionsBitField.Flags.ManageChannels,
-                            PermissionsBitField.Flags.ManageGuild,   
+                            PermissionsBitField.Flags.ManageGuild,
                             PermissionsBitField.Flags.ManageRoles,  // ONLY works when Vyklyk Bot is Administrator
                             ],
                     },*/
@@ -170,29 +173,29 @@ class VyklykManager {
         const roles = [];
         try {
             // discord_channel_inceptors_role_name,
-            let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
+            let role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });
             roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
             // add interaction member to inceptors_role
             VyklykManager.tryAddMemeberToRole(interaction.member, role);
 
             // discord_channel_challengers_role_name
-            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-            roles.push(role);	
+            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });
+            roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_challengers_permissions);
 
             // discord_channel_pending_challengers_role_name
-            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-            roles.push(role);	
+            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_pending_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });
+            roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_pending_challengers_permissions);
 
             // discord_channel_banned_role_name
-            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_banned_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });	
-            roles.push(role);	
+            role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_banned_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });
+            roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_banned_permissions);
 
             return roles;
-        } 
+        }
         catch (err) {
             throw new InceptionError (
                 `Error: failed to setup permissions for the channel.\nError details: ${err.toString()}`,
@@ -210,7 +213,7 @@ class VyklykManager {
 		}
     }
 
-    static async tryAddMemeberToRole(member, role){
+    static async tryAddMemeberToRole(member, role) {
         try {
             await member.roles.add(role);
             return null;
@@ -222,7 +225,7 @@ class VyklykManager {
 
     static async getChannelRoles(interaction, channel) {
         const rolesNames = VyklykManager.getChannelRolesNames(channel.id);
-        return /*await*/ interaction.guild.roles.cache.filter((role) => rolesNames.includes(role.name));
+        return /* await*/ interaction.guild.roles.cache.filter((role) => rolesNames.includes(role.name));
     }
 
     static async deleteRole(interaction, role) {
@@ -235,7 +238,7 @@ class VyklykManager {
         const published = await channel.permissionsFor(channel.guild.id).has(PermissionsBitField.Flags.ViewChannel);
         return published;
     }
-    
+
     static async publishChannel(channel, publish = true /* pass 'false' to unpublish */) {
         const published = VyklykManager.channelIsPublished(channel);
         if (published != publish) {
@@ -272,18 +275,18 @@ class VyklykManager {
         return true;
     }
 
-    static getVyklyksChannelCategory (interaction) {
-        return interaction.guild.channels.cache.find(x => 
-            x.type === ChannelType.GuildCategory && x.name === discord_vyklyks_category_name );        
+    static getVyklyksChannelCategory(interaction) {
+        return interaction.guild.channels.cache.find(x =>
+            x.type === ChannelType.GuildCategory && x.name === discord_vyklyks_category_name);
     }
 
-    static isVyklykChannel (interaction, channel) {
-        const vyklyksCategory =  VyklykManager.getVyklyksChannelCategory(interaction)
-        return (channel.parent && channel.parent.id === vyklyksCategory.id); 
+    static isVyklykChannel(interaction, channel) {
+        const vyklyksCategory = VyklykManager.getVyklyksChannelCategory(interaction);
+        return (channel.parent && channel.parent.id === vyklyksCategory.id);
     }
 }
 
 module.exports = {
 	InceptionError,
-    VyklykManager
+    VyklykManager,
 };

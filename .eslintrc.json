@@ -4,10 +4,11 @@
 		"node": true,
         "commonjs": true,
         "browser": true,		
+        "es2022": true,
 		"es6": true
 	},
 	"parserOptions": {
-		"ecmaVersion": 2021
+		"ecmaVersion": 13
 	},
 	"rules": {
 		"arrow-spacing": ["warn", { "before": true, "after": true }],

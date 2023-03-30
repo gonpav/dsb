@@ -66,7 +66,7 @@ module.exports = {
 		}
 		catch (err) {
 			await interaction.followUp({ content: `Error: something went wrong: ${err.toString()}`, ephemeral: true });
-		};
+		}
 	},
 };
 
