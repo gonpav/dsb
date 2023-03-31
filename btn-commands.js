@@ -99,7 +99,7 @@ module.exports = {
                     // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
                     await i.followUp({ content: message, ephemeral: true }); // Use this if i.deferUpdate(); in filter
 
-                    message = `New challenge application submitted. Discord user ${inlineCode(i.member.displayName)} / (${inlineCode(i.member.user.tag)}) specified Faceit nickname: ${inlineCode(faceitNickname)}.\nPlease review the application and approve or reject it ASAP.`;
+                    message = `new challenge application submitted!!! \nDiscord user ${inlineCode(i.member.displayName)} / (${inlineCode(i.member.user.tag)}) with ${inlineCode('challenger-id: ' + i.member.user.id)} specified Faceit nickname: ${inlineCode(faceitNickname)}.\nPlease review the application and approve or reject it ASAP.`;
                     VyklykManager.tryNotifyInceptors(i, channel, message);
                 }
                 catch (err) {
