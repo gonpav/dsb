@@ -1,10 +1,10 @@
 const { SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { channelMention, userMention, ChannelType } = require('discord.js');
+const { channelMention } = require('discord.js');
 const {
 	discord_vyklyk_webhook,
 	discord_admin_inceptor_role_name,
 	discord_thread_discussion_name,
-	discord_thread_internal_inceptors
+	discord_thread_internal_inceptors,
  } = require('../config.json');
 
 const MsgConstants = require('../msg-constants.js');
@@ -112,7 +112,7 @@ module.exports = {
 				const acceptLabel = validateAcceptButton(i.fields.getTextInputValue(MODAL_ACCEPT_INPUT_ID));
 				const inceptors = await VyklykManager.getMembersByName(i, i.fields.getTextInputValue(MODAL_INCEPTORS_INPUT_ID), true);
 
-				await i.followUp({ content: `Validation succeeded.\nStep 2 of ${steps}. Creating channel. Please wait…`, ephemeral: true }); 
+				await i.followUp({ content: `Validation succeeded.\nStep 2 of ${steps}. Creating channel. Please wait…`, ephemeral: true });
 				const channel = await VyklykManager.createChannel(interaction, channelName);
 
 				await i.followUp({ content: `Channel ${channelMention(channel.id)} created.\nStep 3 of ${steps}. Setting up permissions. Please wait…`, ephemeral: true });
@@ -256,28 +256,27 @@ async function postWebhook(channel, vyklykData, acceptBtnLabel) {
 }
 
 async function setChannelTopic(channel, topicText) {
-	if (topicText && topicText.length > 0) {
-		try {
-			const messages = await channel.messages.fetch({ limit: 1 });
-			const firstMessage = messages.first();
+	try {
+		let messages = await channel.messages.fetch({ limit: 1 });
+		const firstMessage = messages.first();
+		if (topicText && topicText.length > 0) {
 			await channel.setTopic(`${topicText} ${firstMessage.url}`);
-			await channel.messages.pin(firstMessage);
 		}
-		catch (err) {
-			return err;
-		}
+		await channel.messages.pin(messages.first());
+
+		// delete last message
+		messages = await channel.messages.fetch({ limit: 1 });
+		await channel.bulkDelete(messages);
+	}
+	catch (err) {
+		return err;
 	}
 	return null;
 }
 
 async function createDiscussionThread(interaction, channel) {
 	try {
-		const thread = await channel.threads.create({
-			name: discord_thread_discussion_name,
-			autoArchiveDuration: 60,
-			type: ChannelType.PublicThread,
-			reason: 'Open discussion thread for all participants',
-		});
+		VyklykManager.createDiscussionThread(channel, 'Open discussion thread for all participants');
 		// await thread.send(`@everyone who participates! Please join the discussion here!`);
 		return null;
 	}
@@ -288,17 +287,10 @@ async function createDiscussionThread(interaction, channel) {
 
 async function createInceptorsInternalThread(channel, interactionMember, inceptors) {
 	try {
-		const thread = await channel.threads.create({
-			name: discord_thread_internal_inceptors,
-			autoArchiveDuration: 60,
-			type: ChannelType.PrivateThread,
-			reason: 'Dedicated thread for vyklyk administration',
-		});
-		await thread.members.add(interactionMember);
-		inceptors.forEach(async (inceptor) => {
-			// await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
-			await thread.members.add(inceptor /* interaction.user.id */);
-		});
+		if (!inceptors) inceptors = [];
+		if (!inceptors.includes(interactionMember)) inceptors.push(interactionMember);
+
+		VyklykManager.createInceptorsInternalThread(channel, inceptors);
 		return null;
 	}
 	catch (err) {

@@ -11,8 +11,9 @@ const {
 	discord_channel_pending_challengers_permissions,
 	discord_channel_banned_role_name,
 	discord_channel_banned_permissions,
+    discord_thread_discussion_name,
+    discord_thread_internal_inceptors,
 } = require('./config.json');
-
 
 // InceptionException error class;
 class InceptionError extends Error {
@@ -53,6 +54,7 @@ class InceptionError extends Error {
 	}
 }
 
+// Main class to manage vyklyks on Discord server
 class VyklykManager {
     constructor() {
         // We leave it empty for now
@@ -283,6 +285,33 @@ class VyklykManager {
     static isVyklykChannel(interaction, channel) {
         const vyklyksCategory = VyklykManager.getVyklyksChannelCategory(interaction);
         return (channel.parent && channel.parent.id === vyklyksCategory.id);
+    }
+
+    static async createDiscussionThread(channel, reason) {
+        return await channel.threads.create({
+			name: discord_thread_discussion_name,
+			autoArchiveDuration: 60,
+			type: ChannelType.PublicThread,
+			reason: reason,
+		});
+    }
+
+    static async createInceptorsInternalThread(channel, /* interactionMember, */ inceptors) {
+        const thread = await channel.threads.create({
+            name: discord_thread_internal_inceptors,
+            autoArchiveDuration: 60,
+            type: ChannelType.PrivateThread,
+            reason: 'Dedicated thread for vyklyk administration',
+        });
+        // await thread.members.add(interactionMember);
+        inceptors.forEach(async (inceptor) => {
+            // await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
+            await thread.members.add(inceptor /* interaction.user.id */);
+        });
+        // delete last message
+        const messages = await channel.messages.fetch({ limit: 1 });
+        await channel.bulkDelete(messages);
+        return thread;
     }
 }
 
