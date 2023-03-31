@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, channelMention, userMention } = require('discord.js');
 const { VyklykManager } = require('../vyklyk-manager.js');
-const { discord_admin_inceptor_role_name, discord_thread_internal_inceptors } = require('../config.json');
+const { discord_admin_inceptor_role_name } = require('../config.json');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -24,7 +24,7 @@ module.exports = {
 			const unpublish = (interaction.options.getString('unpublish') === 'yes');
 
 			// Check: user is in Channel Inceptors role OR in Admin Inceptors role
-			if (!VyklykManager.isMemberInChannelInceptorRole (interaction.member, channelId)) {
+			if (!VyklykManager.isMemberInceptor (interaction.member, channelId)) {
 				return await interaction.followUp({
 					content: `Error: you should be a member of '${VyklykManager.getChannelInceptorRoleName(channelId)}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
 					ephemeral: true });
@@ -39,7 +39,7 @@ module.exports = {
 			}
 
 			// check: server is not published yet
-			const vyklykPublished = await VyklykManager.channelIsPublished (channel);
+			const vyklykPublished = await VyklykManager.isChannelPublished (channel);
 			if (vyklykPublished !== unpublish) {
 				return await interaction.followUp({
 					content: `Warning: The vyklyk was already '${vyklykPublished ? 'published' : 'unpublished'}' before`,
@@ -57,12 +57,8 @@ module.exports = {
 			const message = `vyklyk was ${unpublish ? 'unpublished' : 'published'} by ${userMention(interaction.user.id)}. The channel ${channelMention(channelId)} is now ${unpublish ? 'NOT' : ''} accessible to the public`;
 			await interaction.followUp(`Success: the ${message}`);
 
-
 			// Message in Internal thread
-            const thread = channel.threads.cache.find(x => x.name === discord_thread_internal_inceptors);
-            if (thread) {
-				await thread.send(`The ${message}`);
-            }
+			await VyklykManager.tryNotifyInceptors(interaction, channel, `The ${message}`);
 		}
 		catch (err) {
 			await interaction.followUp({ content: `Error: something went wrong: ${err.toString()}`, ephemeral: true });

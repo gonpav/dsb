@@ -18,7 +18,7 @@ module.exports = {
 		const channelId = interaction.options.getString('vyklyk-id');
 
 		// Check: user is in Channel Inceptors role OR in Admin Inceptors role
-		if (!VyklykManager.isMemberInChannelInceptorRole (interaction.member, channelId)) {
+		if (!VyklykManager.isMemberInceptor (interaction.member, channelId)) {
 			return await interaction.followUp({
 				content: `Error: you should be a member of '${VyklykManager.getChannelInceptorRoleName(channelId)}' or '${discord_admin_inceptor_role_name}' role to execute this slash command`,
 				ephemeral: true });
@@ -34,7 +34,7 @@ module.exports = {
 		}
 
 		// check: server is not published yet
-		if (await VyklykManager.channelIsPublished (channel)) {
+		if (await VyklykManager.isChannelPublished (channel)) {
 			return await interaction.followUp({
 				content: `Error: the vyklyk is published. Cannot delete published channel. If you will try to delete it MANUALY, then also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
 				ephemeral: true });

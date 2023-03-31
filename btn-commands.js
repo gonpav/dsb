@@ -5,20 +5,16 @@
 //
 // /////////////////////////////////////////////////////////////////////////////////
 
-const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const { channelMention, userMention, inlineCode } = require('discord.js');
+
+const { VyklykManager } = require('./vyklyk-manager.js');
 const MsgConstants = require('./msg-constants.js');
 
 // Constants
 const BTN_VYKLYK_REGISTER_PREFIX = 'btn_global_register_';
 const MODAL_FACEIT_REGISTER_PREFIX = 'mdl_register_{0}_faceit_{1}';
 const MODAL_FACEIT_INPUT_PREFIX = 'inp_register_{0}_faceit_{1}';
-
-// Check if user already registered for the Challenge
-function isUserRegistered(userId) {
-    if (userId === '1083198956680527992') return false;
-    return true;
-}
 
 module.exports = {
 
@@ -38,39 +34,16 @@ module.exports = {
         // We do NOT use defer here because of showModal later that should shown first
         // await interaction.deferReply({ ephemeral: true });
 
-        if (false /* isUserRegistered(interaction.user.id) */) {
-            // return await interaction.followUp({ - we do NOT use followUp here because of NO deferReply above
-            return await interaction.reply ({
-                content: MsgConstants.getMessage(MsgConstants.MSG_REGISTER_ALREADY, interaction.locale),
-                ephemeral: true,
-                });
-        }
+        const channelId = getVyklykRegisterButtonChannelId(interaction);
 
-        // 1. TODO: Check if user can apply
+        // Check if user can apply
+        if (!await validateApplication(interaction, channelId)) return;
 
-        if (false) {
-            // Here is the code of creation of the special thread for the user registration.
-            // I removed it because it looks more complex flow than it should be
+        const channel = await interaction.client.channels.fetch(channelId);
 
-            const privateThreadName = `registration-${interaction.user.tag}`;
-            let thread = interaction.channel.threads.cache.find(x => x.name === privateThreadName);
-            if (!thread) {
-                thread = await interaction.channel.threads.create({
-                    name: privateThreadName,
-                    autoArchiveDuration: 60,
-                    type: ChannelType.PrivateThread,
-                    reason: 'Needed a separate thread for registration process',
-                });
-
-                await thread.members.add(interaction.user.id);
-            }
-            // await interaction.followUp({
-            await interaction.reply({
-                content: `Continue registration in ${channelMention(thread.id)}`,
-                ephemeral: true,
-            });
-            await thread.send(`Hey ${userMention(interaction.user.id)}! Continue registration here!`);
-        }
+        // Here is the code of creation of the special thread for the user registration.
+        // I removed it because it looks more complex flow than it should be
+        // createPrivateRegistrationThread (interaction, channel);
 
         // Show message box to enter the Faceit Id
         const MODAL_FACEIT_TITLE = MsgConstants.getMessage(MsgConstants.MDL_FACEIT_TITLE, interaction.locale);
@@ -83,7 +56,6 @@ module.exports = {
 		// Add components to modal
 
 		// Create the text input components
-        // const MODAL_FACEIT_INPUT_ID = `inp_register_${interaction.channel.id}_faceit_${interaction.user.id}`;
         const MODAL_FACEIT_INPUT_ID = MsgConstants.composeString(MODAL_FACEIT_INPUT_PREFIX, interaction.channel.id, interaction.user.id);
 		const faceitNicknameInput = new TextInputBuilder()
 			.setCustomId(MODAL_FACEIT_INPUT_ID)
@@ -113,38 +85,84 @@ module.exports = {
         // };
         interaction.awaitModalSubmit({ time: 600_000, filter })
             .then(async (i) => {
-                const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
-                const message = MsgConstants.getMessage(
-                    MsgConstants.CHALLENGE_SUBMISSION_SUCCESS,
-                    interaction.locale,
-                    userMention(i.user.id),
-                    inlineCode(faceitNickname));
-                // await interaction.followUp({ content: message, ephemeral: true });
 
-                // Long operation here....
-                console.log(message);
-                // console.log(`Collected ${faceitNickname} from ${i.user.tag}`);
+                try {
+                    VyklykManager.addMemberToPendingChallengers(i, i.member, channelId);
 
-                // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
-                await i.followUp({ content: message, ephemeral: true }); // Use this if i.deferUpdate(); in filter
-                function sleep(ms) {
-                    return new Promise(resolve => setTimeout(resolve, ms));
+                    const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
+                    let message = MsgConstants.getMessage(
+                        MsgConstants.MSG_REGISTRATION_SUCCESS,
+                        interaction.locale,
+                        userMention(i.user.id),
+                        inlineCode(faceitNickname));
+
+                    // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+                    await i.followUp({ content: message, ephemeral: true }); // Use this if i.deferUpdate(); in filter
+
+                    message = `New challenge application submitted. Discord user ${inlineCode(i.member.displayName)} / (${inlineCode(i.member.user.tag)}) specified Faceit nickname: ${inlineCode(faceitNickname)}.\nPlease review the application and approve or reject it ASAP.`;
+                    VyklykManager.tryNotifyInceptors(i, channel, message);
                 }
-
-                await sleep(2000);
-                await i.followUp({ content: 'Hold on! We are continue processing your request', ephemeral: true });
-
+                catch (err) {
+                    // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+                    await i.followUp({ content: MsgConstants.getMessage(MsgConstants.MSG_REGISTRATION_ERROR, interaction.locale), ephemeral: true }); // Use this if i.deferUpdate(); in filter
+                }
             })
             .catch(err => {
                 console.log(`No modal submit interaction was collected: ${err.toString()}`);
             });
-    //     const collector = interaction.channel.createMessageComponentCollector({ filter });
-    //     collector.on('collect', async i => {
-    //         console.log(`Collected ${i}`);
-    //         // await i.update({ content: 'A button was clicked!', components: [] });
-    //     });
-    //     collector.on('end', collected => {
-    //         console.log(`Collected ${collected.size} items`);
-    //     });
     },
 };
+
+function getVyklykRegisterButtonChannelId(interaction) {
+    if (interaction.customId.startsWith(BTN_VYKLYK_REGISTER_PREFIX)) {
+        return interaction.customId.substring(BTN_VYKLYK_REGISTER_PREFIX.length);
+    }
+}
+
+async function validateApplication(interaction, channelId) {
+
+    if (VyklykManager.isMemberChallenger(interaction.member, channelId)) {
+        await interaction.reply ({
+            content: MsgConstants.getMessage(MsgConstants.MSG_REGISTER_ALREADY, interaction.locale),
+            ephemeral: true,
+            });
+        return false;
+    }
+    if (VyklykManager.isMemberPendingChallenger(interaction.member, channelId)) {
+        await interaction.reply ({
+            content: MsgConstants.getMessage(MsgConstants.MSG_REGISTER_PENDING, interaction.locale),
+            ephemeral: true,
+            });
+        return false;
+    }
+    if (VyklykManager.isMemberBanned(interaction.member, channelId)) {
+        await interaction.reply ({
+            content: MsgConstants.getMessage(MsgConstants.MSG_YOU_WERE_BANNED, interaction.locale),
+            ephemeral: true,
+            });
+        return false;
+    }
+    return true;
+}
+
+async function createPrivateRegistrationThread(interaction, channel) {
+
+    const privateThreadName = `registration-${interaction.user.tag}`;
+    let thread = channel.threads.cache.find(x => x.name === privateThreadName);
+    if (!thread) {
+        thread = await channel.threads.create({
+            name: privateThreadName,
+            autoArchiveDuration: 60,
+            type: ChannelType.PrivateThread,
+            reason: 'Needed a separate thread for registration process',
+        });
+
+        await thread.members.add(interaction.user.id);
+    }
+    // await interaction.followUp({
+    await interaction.reply({
+        content: `Continue registration in ${channelMention(thread.id)}`,
+        ephemeral: true,
+    });
+    await thread.send(`Hey ${userMention(interaction.user.id)}! Continue registration here!`);
+}

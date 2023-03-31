@@ -1,4 +1,4 @@
-const { ChannelType, PermissionsBitField } = require('discord.js');
+const { ChannelType, PermissionsBitField, roleMention } = require('discord.js');
 const MsgConstants = require('./msg-constants.js');
 const {
     discord_vyklyks_category_name,
@@ -215,14 +215,21 @@ class VyklykManager {
 		}
     }
 
-    static async tryAddMemeberToRole(member, role) {
+    static async tryAddMemeberToRole(member, role, safe = true) {
         try {
             await member.roles.add(role);
             return null;
         }
         catch (err) {
+            if (!safe) throw err;
             return err;
         }
+    }
+
+    static async addMemeberToRoleByName(interaction, member, channelId, roleNamePrefix) {
+        const roleName = MsgConstants.composeString(roleNamePrefix, channelId);
+        const role = interaction.guild.roles.cache.find(x => x.name === roleName);
+        return await VyklykManager.tryAddMemeberToRole(member, role, false);
     }
 
     static async getChannelRoles(interaction, channel) {
@@ -233,19 +240,6 @@ class VyklykManager {
     static async deleteRole(interaction, role) {
         if (!role) return;
         await interaction.guild.roles.delete(role);
-    }
-
-    static async channelIsPublished(channel) {
-        // For now we just check if ViewChannel is open for everyone
-        const published = await channel.permissionsFor(channel.guild.id).has(PermissionsBitField.Flags.ViewChannel);
-        return published;
-    }
-
-    static async publishChannel(channel, publish = true /* pass 'false' to unpublish */) {
-        const published = VyklykManager.channelIsPublished(channel);
-        if (published != publish) {
-            await channel.permissionOverwrites.create(channel.guild.roles.everyone, { ViewChannel: publish });
-        }
     }
 
     static getChannelRolesNames(channelId) {
@@ -264,7 +258,7 @@ class VyklykManager {
         return (member.roles.cache.some(role => role.name === roleName));
     }
 
-    static isMemberInChannelInceptorRole(member, channelId, checkAdminInceptor = true) {
+    static isMemberInceptor(member, channelId, checkAdminInceptor = true) {
 		const inceptorRoleName = VyklykManager.getChannelInceptorRoleName(channelId);
 
         // if (!(member.roles.cache.some(role => role.name === inceptorRoleName))) {
@@ -277,6 +271,25 @@ class VyklykManager {
         return true;
     }
 
+    static isMemberChallenger(member, channelId) {
+        const roleName = MsgConstants.composeString(discord_channel_challengers_role_name, channelId);
+        return VyklykManager.isMemberInRole(member, roleName);
+    }
+
+    static isMemberPendingChallenger(member, channelId) {
+        const roleName = MsgConstants.composeString(discord_channel_pending_challengers_role_name, channelId);
+        return VyklykManager.isMemberInRole(member, roleName);
+    }
+
+    static async addMemberToPendingChallengers(interaction, member, channelId) {
+        return VyklykManager.addMemeberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
+    }
+
+    static isMemberBanned(member, channelId) {
+        const roleName = MsgConstants.composeString(discord_channel_banned_role_name, channelId);
+        return VyklykManager.isMemberInRole(member, roleName);
+    }
+
     static getVyklyksChannelCategory(interaction) {
         return interaction.guild.channels.cache.find(x =>
             x.type === ChannelType.GuildCategory && x.name === discord_vyklyks_category_name);
@@ -285,6 +298,18 @@ class VyklykManager {
     static isVyklykChannel(interaction, channel) {
         const vyklyksCategory = VyklykManager.getVyklyksChannelCategory(interaction);
         return (channel.parent && channel.parent.id === vyklyksCategory.id);
+    }
+
+    static async isChannelPublished(channel) {
+        // For now we just check if ViewChannel is open for everyone
+        return await channel.permissionsFor(channel.guild.id).has(PermissionsBitField.Flags.ViewChannel);
+    }
+
+    static async publishChannel(channel, publish = true /* pass 'false' to unpublish */) {
+        const published = VyklykManager.isChannelPublished(channel);
+        if (published != publish) {
+            await channel.permissionOverwrites.create(channel.guild.roles.everyone, { ViewChannel: publish });
+        }
     }
 
     static async createDiscussionThread(channel, reason) {
@@ -296,14 +321,13 @@ class VyklykManager {
 		});
     }
 
-    static async createInceptorsInternalThread(channel, /* interactionMember, */ inceptors) {
+    static async createInceptorsInternalThread(channel, inceptors) {
         const thread = await channel.threads.create({
             name: discord_thread_internal_inceptors,
             autoArchiveDuration: 60,
             type: ChannelType.PrivateThread,
             reason: 'Dedicated thread for vyklyk administration',
         });
-        // await thread.members.add(interactionMember);
         inceptors.forEach(async (inceptor) => {
             // await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
             await thread.members.add(inceptor /* interaction.user.id */);
@@ -312,6 +336,21 @@ class VyklykManager {
         const messages = await channel.messages.fetch({ limit: 1 });
         await channel.bulkDelete(messages);
         return thread;
+    }
+
+    static async tryNotifyInceptors(interaction, channel, message) {
+        try {
+            // Message in Internal thread
+            const thread = channel.threads.cache.find(x => x.name === discord_thread_internal_inceptors);
+            if (thread) {
+                const roleName = MsgConstants.composeString(discord_channel_inceptors_role_name, channel.id);
+                const role = interaction.guild.roles.cache.find(x => x.name === roleName);
+                await thread.send(`Hey ${roleMention(role.id)}, ${message}`);
+            }
+        }
+        catch (err) {
+            console.log(`Failed to notify inceptors about ${message}. Error: ${err.toString()}`);
+        }
     }
 }
 

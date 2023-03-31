@@ -26,6 +26,16 @@ const MSG_REGISTER_ALREADY = {
     'ru': 'Вы уже успешно зарегестрировались на этот челлендж!',
 };
 
+const MSG_REGISTER_PENDING = {
+    'en-US': 'You have already applied for this challenge!  We will review your sumbission soon and let you know if you are accepted!',
+    'ru': 'Ваш запрос на регистрацию уже добавлен и ожидает рассмотрения!',
+};
+
+const MSG_YOU_WERE_BANNED = {
+    'en-US': 'You were banned from this challenge!',
+    'ru': 'Ваc забанили',
+};
+
 const MDL_FACEIT_TITLE = {
     'en-US': 'Faceit Account',
     'ru': 'Учетная запись Faceit',
@@ -41,9 +51,14 @@ const MDL_FACEIT_PLACEHOLDER = {
     'ru': 'Введите Faceit никнейм, которым вы будете играть',
 };
 
-const CHALLENGE_SUBMISSION_SUCCESS = {
+const MSG_REGISTRATION_SUCCESS = {
     'en-US': '{0}, thank you for submitting your Faceit nickname: {1}. We will review your sumbission soon and let you know if you are accepted!',
     'ru': '{0}, спасибо за то, что указали ваш Faceit никнейм: {1}. Ваш запрос на регистрацию добавлен. Мы его вскоре рассмотрим и уведомим вас о решении!',
+};
+
+const MSG_REGISTRATION_ERROR = {
+    'en-US': 'Oooh! Some error occured. Please try again!',
+    'ru': 'Что-то случилось нехорошее. Попробуйте еще раз!',
 };
 
 // Example:
@@ -86,10 +101,13 @@ module.exports = {
 
     // Resigter to the Challenge Messages
     MSG_REGISTER_ALREADY: MSG_REGISTER_ALREADY,
+    MSG_REGISTER_PENDING: MSG_REGISTER_PENDING,
+    MSG_YOU_WERE_BANNED: MSG_YOU_WERE_BANNED,
     MDL_FACEIT_TITLE: MDL_FACEIT_TITLE,
     MDL_FACEIT_LABEL: MDL_FACEIT_LABEL,
     MDL_FACEIT_PLACEHOLDER: MDL_FACEIT_PLACEHOLDER,
-    CHALLENGE_SUBMISSION_SUCCESS: CHALLENGE_SUBMISSION_SUCCESS,
+    MSG_REGISTRATION_SUCCESS: MSG_REGISTRATION_SUCCESS,
+    MSG_REGISTRATION_ERROR: MSG_REGISTRATION_ERROR,
 
     // Functions
     getMessage: getMessage,
