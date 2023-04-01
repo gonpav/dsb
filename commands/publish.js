@@ -30,13 +30,7 @@ module.exports = {
 					ephemeral: true });
 			}
 
-			const channel = await interaction.client.channels.fetch(channelId);
-			// If the channel is not found, return
-			if (!channel) {
-				return await interaction.followUp({
-					content: `Error: cannot find the channel with specified id '${channelId}'`,
-					ephemeral: true });
-			}
+			const channel = await VyklykManager.getChannelById(interaction, channelId);
 
 			// check: server is not published yet
 			const vyklykPublished = await VyklykManager.isChannelPublished (channel);

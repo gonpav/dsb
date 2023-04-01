@@ -24,14 +24,7 @@ module.exports = {
 				ephemeral: true });
 		}
 
-		const channel = await interaction.client.channels.fetch(channelId);//
-		// const channel = await interaction.client.channels.cache.get(channelId);
-		// If the channel is not found, return
-		if (!channel) {
-			return await interaction.followUp({
-				content: `Error: cannot find the channel with specified id. Please find and delete channel MANUALY and also delete all associated roles on server: ${VyklykManager.getChannelRolesNames(channelId)}`,
-				ephemeral: true });
-		}
+		const channel = await VyklykManager.getChannelById(interaction, channelId);		
 
 		// check: server is not published yet
 		if (await VyklykManager.isChannelPublished (channel)) {

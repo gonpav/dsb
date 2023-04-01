@@ -39,7 +39,7 @@ module.exports = {
         // Check if user can apply
         if (!await validateApplication(interaction, channelId)) return;
 
-        const channel = await interaction.client.channels.fetch(channelId);
+        const channel = await VyklykManager.getChannelById(interaction, channelId);
 
         // Here is the code of creation of the special thread for the user registration.
         // I removed it because it looks more complex flow than it should be
@@ -99,7 +99,7 @@ module.exports = {
                     // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
                     await i.followUp({ content: message, ephemeral: true }); // Use this if i.deferUpdate(); in filter
 
-                    message = `new challenge application submitted!!! \nDiscord user ${inlineCode(i.member.displayName)} / (${inlineCode(i.member.user.tag)}) with ${inlineCode('challenger-id: ' + i.member.user.id)} specified Faceit nickname: ${inlineCode(faceitNickname)}.\nPlease review the application and approve or reject it ASAP.`;
+                    message = `new challenge application submitted!!! \nDiscord user ${inlineCode(i.member.displayName)} / (${inlineCode(i.member.user.tag)}) with 'challenger-id': ${inlineCode(i.member.user.id)} specified Faceit nickname: ${inlineCode(faceitNickname)}.\nPlease review the application and approve or reject it ASAP.`;
                     VyklykManager.tryNotifyInceptors(i, channel, message);
                 }
                 catch (err) {

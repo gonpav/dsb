@@ -60,6 +60,24 @@ class VyklykManager {
         // We leave it empty for now
     }
 
+    static async getChannelById(interaction, channelId) {
+        try {
+            return await interaction.client.channels.fetch(channelId);
+        }
+        catch (err) {
+            throw new Error (`Error: cannot find the channel with specified id '${channelId}'. ${err.toString()}`);
+        }
+    }
+
+    static async getMemberById(interaction, memberId) {
+        try {
+            return await interaction.guild.members.fetch(memberId);
+        }
+        catch (err) {
+            throw new Error (`Error: cannot find the server member with specified id '${memberId}'. ${err.toString()}`);
+        }
+    }
+
     // This function gets all members from the server first
     // and look for entered names. It is NOT using guild.members.cache
     // so potentially it can be a problematic call in the future
@@ -179,7 +197,7 @@ class VyklykManager {
             roles.push(role);
             await channel.permissionOverwrites.create(role.id, discord_channel_inceptors_permissions);
             // add interaction member to inceptors_role
-            VyklykManager.tryAddMemeberToRole(interaction.member, role);
+            VyklykManager.tryAddMemberToRole(interaction.member, role);
 
             // discord_channel_challengers_role_name
             role = await interaction.guild.roles.create({ name: MsgConstants.composeString(discord_channel_challengers_role_name, channel.id.toString()), permissions: new PermissionsBitField(0n) });
@@ -215,9 +233,9 @@ class VyklykManager {
 		}
     }
 
-    static async tryAddMemeberToRole(member, role, safe = true) {
+    static async tryAddMemberToRole(member, role, add = true, safe = true) {
         try {
-            await member.roles.add(role);
+            add ? await member.roles.add(role) : await member.roles.remove(role);
             return null;
         }
         catch (err) {
@@ -226,10 +244,10 @@ class VyklykManager {
         }
     }
 
-    static async addMemeberToRoleByName(interaction, member, channelId, roleNamePrefix) {
+    static async addMemberToRoleByName(interaction, member, channelId, roleNamePrefix, add = true /* false to remove */) {
         const roleName = MsgConstants.composeString(roleNamePrefix, channelId);
         const role = interaction.guild.roles.cache.find(x => x.name === roleName);
-        return await VyklykManager.tryAddMemeberToRole(member, role, false);
+        return await VyklykManager.tryAddMemberToRole(member, role, add, false);
     }
 
     static async getChannelRoles(interaction, channel) {
@@ -281,8 +299,25 @@ class VyklykManager {
         return VyklykManager.isMemberInRole(member, roleName);
     }
 
-    static async addMemberToPendingChallengers(interaction, member, channelId) {
-        return VyklykManager.addMemeberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
+    static async addMemberToPendingChallengers(interaction, member, channelId, add = true) {
+        if (add) {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
+        }
+        else {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+        }
+    }
+
+    static async addMemberToChallengers(interaction, member, channelId, add = true, removeFromPending = true) {
+        if (removeFromPending) {
+            VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+        }
+        if (add) {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name);
+        }
+        else {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name, false);
+        }
     }
 
     static isMemberBanned(member, channelId) {
@@ -321,6 +356,10 @@ class VyklykManager {
 		});
     }
 
+    static getDiscussionThread(channel) {
+        return channel.threads.cache.find(x => x.name === discord_thread_discussion_name);
+    }
+
     static async createInceptorsInternalThread(channel, inceptors) {
         const thread = await channel.threads.create({
             name: discord_thread_internal_inceptors,
@@ -329,7 +368,7 @@ class VyklykManager {
             reason: 'Dedicated thread for vyklyk administration',
         });
         inceptors.forEach(async (inceptor) => {
-            // await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
+            // await VyklykManager.tryAddMemberToRole(inceptor, inceptorRole);
             await thread.members.add(inceptor /* interaction.user.id */);
         });
         // delete last message

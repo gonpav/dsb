@@ -61,6 +61,11 @@ const MSG_REGISTRATION_ERROR = {
     'ru': 'Что-то случилось нехорошее. Попробуйте еще раз!',
 };
 
+const MSG_REGISTRATION_APPROVED = {
+    'en-US': '{0}, your registration to the challenge was approved. Please follow the announcements in the channel {1} and participate in the discussions here: {2}',
+    'ru': '{0}, ваша регистрация в челлендже одобрена. Следите за событиями на канале {1} и участвуйте в обсуждениях тут: {2}',
+}
+
 // Example:
 // const str = 'The {0} brown {1} jumps over the {2} dog.';
 // const result = composeString(str, 'quick', 'fox', 'lazy');
@@ -108,6 +113,7 @@ module.exports = {
     MDL_FACEIT_PLACEHOLDER: MDL_FACEIT_PLACEHOLDER,
     MSG_REGISTRATION_SUCCESS: MSG_REGISTRATION_SUCCESS,
     MSG_REGISTRATION_ERROR: MSG_REGISTRATION_ERROR,
+    MSG_REGISTRATION_APPROVED: MSG_REGISTRATION_APPROVED,
 
     // Functions
     getMessage: getMessage,

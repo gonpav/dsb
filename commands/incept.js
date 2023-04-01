@@ -135,7 +135,7 @@ module.exports = {
 				let inceptorsAddedCount = inceptors.length;
 				const inceptorRole = roles.find(x => x.name === VyklykManager.getChannelInceptorRoleName(channel.id));
 				inceptors.forEach(async (inceptor) => {
-					err = await VyklykManager.tryAddMemeberToRole(inceptor, inceptorRole);
+					err = await VyklykManager.tryAddMemberToRole(inceptor, inceptorRole);
 					if (err) {
 						errCount++;
 						inceptorsAddedCount--;
