@@ -62,7 +62,7 @@ const MSG_REGISTRATION_ERROR = {
 };
 
 const MSG_REGISTRATION_APPROVED = {
-    'en-US': '{0}, your registration to the challenge was approved. Please follow the announcements in the channel {1} and participate in the discussions here: {2}',
+    'en-US': '{0}, your registration in the challenge was approved. Please follow the announcements in the channel {1} and participate in the discussions here: {2}',
     'ru': '{0}, ваша регистрация в челлендже одобрена. Следите за событиями на канале {1} и участвуйте в обсуждениях тут: {2}',
 }
 

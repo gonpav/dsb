@@ -32,6 +32,10 @@ module.exports = {
 			option.setName('ban')
 				.setDescription('Use \'yes\' to ban the challenger from the channel')
 				.setAutocomplete(true)
+				.setRequired(false))
+		.addStringOption(option =>
+			option.setName('locale')
+				.setDescription('To reply in user`s language please enter his/her locale as specified during submission')
 				.setRequired(false)),
 	async autocomplete(interaction) {
 		const focusedOption = interaction.options.getFocused(true);
@@ -66,6 +70,7 @@ module.exports = {
 			const channel = await VyklykManager.getChannelById(interaction, channelId);
 			const challengerId = interaction.options.getString('challenger-id');
 			const challenger = await VyklykManager.getMemberById(interaction, challengerId);
+			const locale = interaction.options.getString('locale');
 
 			const command = interaction.options.getString('command');
 			if (command === 'approve-applicant') {
@@ -80,10 +85,10 @@ module.exports = {
 				// send message
 				let message = MsgConstants.getMessage(
 					MsgConstants.MSG_REGISTRATION_APPROVED,
-					interaction.locale,
+					locale ? locale : 'en-US' /* interaction.locale */,
 					userMention(challengerId),
 					channelMention(channelId),
-					channelMention(VyklykManager.getDiscussionThread(channel).id));
+					`<#${VyklykManager.getDiscussionThread(channel).id}>`); // this works better than this: channelMention(VyklykManager.getDiscussionThread(channel).id)
 
 				// Send a message to the challenger
 				await challenger.send(message);
