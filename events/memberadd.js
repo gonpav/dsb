@@ -61,7 +61,7 @@ async function welcomeNewMemberInWelcomeChannel(member) {
 module.exports = {
 	name: Events.GuildMemberAdd,
 	async execute(member) {
-    welcomeNewMemberInWelcomeChannel(member);
+    // welcomeNewMemberInWelcomeChannel(member);
       // // Find the channel called "welcome-new-members"
       // const channel = member.guild.channels.cache.find(ch => ch.name === 'welcome-new-members');
       // // If the channel is not found, return
