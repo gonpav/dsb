@@ -71,12 +71,16 @@ module.exports = {
 		modal.addComponents(firstActionRow);
 
 		// Show the modal to the user
-        await interaction.showModal(modal);
-
+        try {
+            await interaction.showModal(modal);
+        }
+        catch (err) {
+            console.log(`Error in Accept Challenge: interaction.showModal failed: ${err.toString()}`);
+        }
         // As for Defer Update, then  see this post by Bing chat:
         // https://sl.bing.net/d3a9JTncd4e
         const filter = async i => {
-            await i.deferUpdate();
+            // await i.deferUpdate();
             return i.customId === MODAL_FACEIT_REGISTER_ID && i.user.id === interaction.user.id;
         };
         // const filterSync = i => {
@@ -87,6 +91,7 @@ module.exports = {
             .then(async (i) => {
 
                 try {
+                    await i.deferUpdate();
                     VyklykManager.addMemberToPendingChallengers(i, i.member, channelId);
 
                     const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
@@ -104,6 +109,7 @@ module.exports = {
                 }
                 catch (err) {
                     // await i.reply({ content: message, ephemeral: true }); // Use this if NO i.deferUpdate(); in filter
+                    console.log(`Error in awaitModalSubmit handler: ${err.toString()}`);
                     await i.followUp({ content: MsgConstants.getMessage(MsgConstants.MSG_REGISTRATION_ERROR, interaction.locale), ephemeral: true }); // Use this if i.deferUpdate(); in filter
                 }
             })
