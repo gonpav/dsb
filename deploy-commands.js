@@ -4,7 +4,6 @@
 // https://discordjs.guide/creating-your-bot/command-deployment.html#command-registration
 
 const { REST, Routes } = require('discord.js');
-const { clientId, guildId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -18,6 +17,11 @@ for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	commands.push(command.data.toJSON());
 }
+
+require('dotenv').config();
+const token = process.env.TOKEN;
+const clientId = process.env.CLIENTID;
+const guildId = process.env.GUILDID;
 
 // Construct and prepare an instance of the REST module
 const rest = new REST({ version: '10' }).setToken(token);

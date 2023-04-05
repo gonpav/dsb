@@ -10,9 +10,11 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { PermissionsBitField } = require('discord.js');
 const { Configuration, OpenAIApi } = require('openai');
-const { openai_token } = require('../config.json');
 const BtnCommands = require('../btn-commands.js');
 const Parser = require('rss-parser');
+
+require('dotenv').config();
+const openai_token = process.env.OPENAI_TOKEN;
 
 const fs = require('node:fs');
 const path = require('node:path');

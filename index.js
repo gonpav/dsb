@@ -48,11 +48,7 @@ const readClientEvents = function() {
 };
 readClientEvents();
 
-// Log in to Discord with your client's token
-// Get discord token from ./config
-const { token } = require('./config.json');
-
 // Get token from .env
-// require('dotenv').config();
-// const token = process.env['DISCORD_TOKEN'];
+require('dotenv').config();
+const token = process.env.TOKEN;
 client.login(token);

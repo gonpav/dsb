@@ -1,0 +1,56 @@
+{
+  "discord_vyklyk_webhook": "Vyklyk Hook {0}",
+  "discord_vyklyks_category_name": "Vyklyks",
+  "discord_admin_inceptor_role_name": "Admin Inceptor",
+  "discord_channel_inceptors_role_name": "{0}-Inceptors",
+  "discord_channel_challengers_role_name": "{0}-Challengers",
+  "discord_channel_pending_challengers_role_name": "{0}-Challengers-pending",
+  "discord_channel_banned_role_name": "{0}-Banned",
+  "discord_channel_inceptors_permissions": {
+    "ViewChannel": true,
+    "ManageChannels": true,
+    "CreateInstantInvite": true,
+    "ManageGuild": true,
+    "ManageRoles": true,
+    "SendMessages": true,
+    "EmbedLinks": true,
+    "AttachFiles": true,
+    "AddReactions": true,
+    "UseExternalEmojis": true,
+    "UseExternalStickers": true,
+    "SendMessagesInThreads": true,
+    "CreatePublicThreads": true,
+    "CreatePrivateThreads": true,
+    "MentionEveryone": true,
+    "ManageMessages": true,
+    "ManageThreads": true,
+    "ReadMessageHistory": true,
+    "SendTTSMessages": true,
+    "UseApplicationCommands": true
+  },
+  "discord_channel_challengers_permissions": {
+    "ViewChannel": true,
+    "CreateInstantInvite": true,
+    "EmbedLinks": true,
+    "AttachFiles": true,
+    "AddReactions": true,
+    "UseExternalEmojis": true,
+    "UseExternalStickers": true,
+    "SendMessagesInThreads": true,
+    "CreatePublicThreads": true
+  },
+  "discord_channel_pending_challengers_permissions": {
+    "ViewChannel": true,
+    "CreateInstantInvite": true,
+    "EmbedLinks": true,
+    "AttachFiles": true,
+    "AddReactions": true,
+    "UseExternalEmojis": true,
+    "UseExternalStickers": true
+  },
+  "discord_channel_banned_permissions": {
+    "ViewChannel": false
+  },
+  "discord_thread_discussion_name": "discussion",
+  "discord_thread_internal_inceptors": "inceptors-internal"
+}

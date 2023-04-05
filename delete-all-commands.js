@@ -4,7 +4,11 @@
 // https://discordjs.guide/creating-your-bot/command-deployment.html#command-registration
 
 const { REST, Routes } = require('discord.js');
-const { clientId, guildId, token } = require('./config.json');
+
+require('dotenv').config();
+const token = process.env.TOKEN;
+const clientId = process.env.CLIENTID;
+const guildId = process.env.GUILDID;
 
 const rest = new REST({ version: '10' }).setToken(token);
 
