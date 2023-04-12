@@ -1,6 +1,11 @@
-// Require keep_alive.js to continue working in Replit env:
-// https://docs.replit.com/tutorials/nodejs/build-basic-discord-bot-nodejs#keeping-our-bot-alive
-const keep_alive = require('./keep_alive.js');
+require('dotenv').config();
+
+let keep_alive;
+if (process.env.KEEP_ALIVE === 'true') {
+    // Require keep_alive.js to continue working in Replit env:
+    // https://docs.replit.com/tutorials/nodejs/build-basic-discord-bot-nodejs#keeping-our-bot-alive
+    keep_alive = require('./keep_alive.js');
+}
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -13,8 +18,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // Required to show Welcome to new memebers
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMessageReactions]
-});
+    GatewayIntentBits.GuildMessageReactions] });
 
 const readClientCommands = function() {
   client.commands = new Collection();
@@ -54,6 +58,5 @@ const readClientEvents = function() {
 readClientEvents();
 
 // Get token from .env
-require('dotenv').config();
 const token = process.env.TOKEN;
 client.login(token);
