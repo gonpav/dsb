@@ -89,6 +89,39 @@ class VyklykManager {
             console.log (`Error: failed to delete a channel in Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
         }
     }
+
+    static async publishChallengeDBEntry(channelId, publish) {
+        try {
+            const key = `${channelId}`;
+            const challenge = await VyklykManager.getChallengeDBEntry(channelId);
+            challenge.status = publish ? ChallengeStatus.Published : ChallengeStatus.Unpublished;
+            await replitDB.set(key, challenge);
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to publish='${publish}' a channel in Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
+        }
+    }
+
+    static async getChallengeDBEntry(channelId) {
+        try {
+            const key = `${channelId}`;
+			const result = await replitDB.get(key, true);
+			const res = JSON.parse(result, (key2, value) => {
+				if (key2 === '') {
+					return new Challenge(value.id, value.status);
+				}
+				return value;
+			});
+            return res;
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to get a channel from Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
+            return null;
+        }
+    }
+
     // Other methods
 
     static async getChannelById(interaction, channelId) {
@@ -377,6 +410,7 @@ class VyklykManager {
     static async publishChannel(channel, publish = true /* pass 'false' to unpublish */) {
         const published = VyklykManager.isChannelPublished(channel);
         if (published != publish) {
+            VyklykManager.publishChallengeDBEntry(channel.id, publish);
             await channel.permissionOverwrites.create(channel.guild.roles.everyone, { ViewChannel: publish });
         }
     }

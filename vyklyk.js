@@ -2,7 +2,7 @@ const ChallengeStatus = Object.freeze({
     Draft: 'Draft',
     Published: 'Published',
     Unpublished: 'Unpublished',
-    Deleted: 'Deleted',
+    // Deleted: 'Deleted',
   });
 
 
@@ -14,9 +14,9 @@ const ChallengerStatus = Object.freeze({
 
 
 class Challenge {
-	constructor(id) {
+	constructor(id, status = ChallengeStatus.Draft) {
 		this.id = id;
-        this.status = ChallengeStatus.Draft;
+        this.status = status;
 	}
 }
 
@@ -28,11 +28,11 @@ class User {
 }
 
 class Challenger extends User {
-	constructor(id, name) {
+	constructor(id, name, vyklykId = null, faceitName = null, status = ChallengerStatus.Pending) {
         super(id, name);
-        this.vyklykId = null;
-        this.faceitNickname = null;
-        this.status = ChallengerStatus.Pending;
+        this.vyklykId = vyklykId;
+        this.faceitName = faceitName;
+        this.status = status;
 	}
 }
 
