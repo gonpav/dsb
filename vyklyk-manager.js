@@ -1,4 +1,9 @@
 const { ChannelType, PermissionsBitField, roleMention } = require('discord.js');
+const { Challenge, Challenger, ChallengeStatus, ChallengerStatus } = require('./vyklyk.js');
+
+const ReplitDB = require('./replitdb.js');
+const replitDB = new ReplitDB ();
+
 const MsgConstants = require('./msg-constants.js');
 const {
     discord_vyklyks_category_name,
@@ -35,6 +40,7 @@ class InceptionError extends Error {
                 if (this.#roles) {
                     this.#roles.forEach(x => this.#cleanupRole(x));
                 }
+                await VyklykManager.deleteChallengeDBEntry(this.#deleteChannel.id);
 				await this.#interaction.guild.channels.delete(this.#deleteChannel);
 			}
 			catch (err) {
@@ -59,6 +65,31 @@ class VyklykManager {
     constructor() {
         // We leave it empty for now
     }
+
+    // Methods to work with Database
+    static async createChallengeDBEntry(channelId) {
+        try {
+            const key = `${channelId}`;
+            const challenge = new Challenge(channelId);
+            await replitDB.set(key, challenge);
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to create a channel in Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
+        }
+    }
+
+    static async deleteChallengeDBEntry(channelId) {
+        try {
+            const key = `${channelId}`;
+            await replitDB.delete(key);
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to delete a channel in Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
+        }
+    }
+    // Other methods
 
     static async getChannelById(interaction, channelId) {
         try {
@@ -182,6 +213,7 @@ class VyklykManager {
                     },*/
                 ],
             });
+            await VyklykManager.createChallengeDBEntry(channel.id);
             return channel;
         }
         catch (err) {
@@ -229,6 +261,8 @@ class VyklykManager {
             if (roles) {
                 roles.forEach(x => this.deleteRole(interaction, x));
             }
+            // TODO: delete challengers from DB
+            await VyklykManager.deleteChallengeDBEntry(channel.id);
             await interaction.guild.channels.delete(channel);
 		}
     }

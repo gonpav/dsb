@@ -20,13 +20,13 @@ class ReplitDB {
   /**
    * Gets a key
    * @param {String} key Key
-   * @param {boolean} [options.raw=false] Makes it so that we return the raw string value. Default is false.
+   * @param {boolean} [raw=false] Makes it so that we return the raw string value. Default is false.
    */
-  async get(key, options) {
+  async get(key, raw = false) {
     return await fetch(this.dbUrl + '/' + key)
       .then((e) => e.text())
       .then((strValue) => {
-        if (options && options.raw) {
+        if (raw && raw === true) {
           return strValue;
         }
 
