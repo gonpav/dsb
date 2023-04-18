@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, channelMention, userMention, inlineCode } = require('discord.js');
 const { VyklykManager } = require('../vyklyk-manager.js');
 const MsgConstants = require('../msg-constants.js');
+const { ChallengerStatus } = require ('../vyklyk.js');
+
 const { discord_admin_inceptor_role_name } = require('../config.json');
 
 module.exports = {
@@ -42,7 +44,8 @@ module.exports = {
 		let choices;
 
 		if (focusedOption.name === 'command') {
-			choices = ['approve-applicant', 'decline-applicant', 'delete-existing'];
+			// choices = ['approve-applicant', 'decline-applicant', 'delete-existing'];
+			choices = ['approve-applicant', 'decline-applicant'];
 		}
 
 		if (focusedOption.name === 'ban') {
@@ -79,7 +82,12 @@ module.exports = {
 					return await interaction.followUp({ content: 'Error: faceit nickname should be specified for the \'approve-applicant\' command', ephemeral: true });
 				}
 
-				// TODO : add challenger to the Database 
+				if (!VyklykManager.isMemberPendingChallenger(challenger, channelId)) {
+					return await interaction.followUp({ content: 'Error: this user is not a pending challenger', ephemeral: true });
+				}
+
+				// Update challenger in the Database
+				await VyklykManager.updateChallengerDBEntry(channelId, challengerId, ChallengerStatus.Approved);
 				// change role
 				await VyklykManager.addMemberToChallengers(interaction, challenger, channelId, true, true);
 				// send message
@@ -106,7 +114,33 @@ module.exports = {
 				// TODO : todo Decline
 				const toban = (interaction.options.getString('ban') === 'yes');
 				console.log(toban);
-				await interaction.followUp({ content: 'Declined', ephemeral: true });
+
+				if (!VyklykManager.isMemberPendingChallenger(challenger, channelId)) {
+					return await interaction.followUp({ content: 'Error: this user is not a pending challenger', ephemeral: true });
+				}
+
+				// Update challenger in the Database
+				await VyklykManager.updateChallengerDBEntry(channelId, challengerId, ChallengerStatus.Declined);
+				// remove from Pending challengers role
+				VyklykManager.addMemberToPendingChallengers(interaction, challenger, channelId, false);
+				if (toban) {
+					// add to banned if required
+					VyklykManager.addMemberToBannedChallengers(interaction, challenger, channelId, true);
+				}
+
+				// send message
+				let message = MsgConstants.getMessage(
+					MsgConstants.MSG_REGISTRATION_DECLINED,
+					locale ? locale : 'en-US',
+					userMention(challengerId),
+					declineReason);
+
+					// Send a message to the challenger
+				await challenger.send(message);
+				await interaction.followUp({ content: 'Challenger declined!', ephemeral: true });
+
+				message = `the Discord user ${inlineCode(challenger.displayName)} / (${inlineCode(challenger.user.tag)}) with 'challenger-id': ${inlineCode(challengerId)} was declined to become a challenger by ${userMention(interaction.user.id)}. \nThe reason is: ${inlineCode(declineReason)}`;
+				await VyklykManager.tryNotifyInceptors(interaction, channel, message);
 			}
 			else if (command === 'delete-existing') {
 				// TODO : todo Delete existing

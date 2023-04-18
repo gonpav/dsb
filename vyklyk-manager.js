@@ -135,6 +135,20 @@ class VyklykManager {
         }
     }
 
+    static async updateChallengerDBEntry(channelId, userId, status) {
+
+        const key = `${channelId}_u${userId}`;
+        try {
+            const user = await VyklykManager.getChallengerDBEntry(channelId, userId);
+            user.status = status;
+            await replitDB.set(key, user);
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to update a challenger in Replit DB with the key: ${key}.\nError details: ${err.toString()}`);
+        }
+    }
+
     static async getChallengerDBEntry(channelId, userId) {
 
         const key = `${channelId}_u${userId}`;
@@ -399,24 +413,34 @@ class VyklykManager {
         return VyklykManager.isMemberInRole(member, roleName);
     }
 
-    static async addMemberToPendingChallengers(interaction, member, channelId/*, add = true*/) {
-        // if (add) {
+    static async addMemberToPendingChallengers(interaction, member, channelId, add = true) {
+        if (add) {
             return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
-        // }
-        // else {
-        //     return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
-        // }
+        }
+        else {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+        }
     }
 
     static async addMemberToChallengers(interaction, member, channelId, add = true, removeFromPending = true) {
         if (removeFromPending) {
-            VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+            // VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+            VyklykManager.addMemberToPendingChallengers(interaction, member, channelId, false);
         }
         if (add) {
             return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name);
         }
         else {
             return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name, false);
+        }
+    }
+
+    static async addMemberToBannedChallengers(interaction, member, channelId, add = true) {
+        if (add) {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_banned_role_name);
+        }
+        else {
+            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_banned_role_name, false);
         }
     }
 

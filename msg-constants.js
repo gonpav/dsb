@@ -64,7 +64,12 @@ const MSG_REGISTRATION_ERROR = {
 const MSG_REGISTRATION_APPROVED = {
     'en-US': '{0}, your registration in the challenge was approved. Please follow the announcements in the channel {1} and participate in the discussions here: {2}',
     'ru': '{0}, ваша регистрация в челлендже одобрена. Следите за событиями на канале {1} и участвуйте в обсуждениях тут: {2}',
-}
+};
+
+const MSG_REGISTRATION_DECLINED = {
+    'en-US': '{0}, your registration in the challenge was NOT approved. {1}',
+    'ru': '{0}, ваша регистрация в челлендже НЕ была одобрена. {1}',
+};
 
 // Example:
 // const str = 'The {0} brown {1} jumps over the {2} dog.';
@@ -114,6 +119,7 @@ module.exports = {
     MSG_REGISTRATION_SUCCESS: MSG_REGISTRATION_SUCCESS,
     MSG_REGISTRATION_ERROR: MSG_REGISTRATION_ERROR,
     MSG_REGISTRATION_APPROVED: MSG_REGISTRATION_APPROVED,
+    MSG_REGISTRATION_DECLINED: MSG_REGISTRATION_DECLINED,
 
     // Functions
     getMessage: getMessage,
