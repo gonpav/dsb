@@ -6,7 +6,7 @@ const replitDB = new ReplitDB ();
 
 const MsgConstants = require('./msg-constants.js');
 const {
-    discord_vyklyks_category_name,
+    discord_vyklyks_category_id,
 	discord_admin_inceptor_role_name,
 	discord_channel_inceptors_role_name,
 	discord_channel_inceptors_permissions,
@@ -118,6 +118,39 @@ class VyklykManager {
         catch (err) {
             // Not critical error for NOW
             console.log (`Error: failed to get a channel from Replit DB with the key: ${channelId}.\nError details: ${err.toString()}`);
+            return null;
+        }
+    }
+
+    static async createChallengerDBEntry(channelId, userId, name, faceit, locale) {
+
+        const key = `${channelId}_u${userId}`;
+        try {
+            const user = new Challenger(userId, name, channelId, faceit, locale, ChallengerStatus.Pending);
+            await replitDB.set(key, user);
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to create a challenger in Replit DB with the key: ${key}.\nError details: ${err.toString()}`);
+        }
+    }
+
+    static async getChallengerDBEntry(channelId, userId) {
+
+        const key = `${channelId}_u${userId}`;
+        try {
+			const result = await replitDB.get(key, true);
+			const res = JSON.parse(result, (key2, value) => {
+				if (key2 === '') {
+					return new Challenger(value.id, value.name, value.vyklykId, value.faceitName, value.locale, value.status);
+				}
+				return value;
+			});
+            return res;
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to get a challenger from Replit DB with the key: ${key}.\nError details: ${err.toString()}`);
             return null;
         }
     }
@@ -366,13 +399,13 @@ class VyklykManager {
         return VyklykManager.isMemberInRole(member, roleName);
     }
 
-    static async addMemberToPendingChallengers(interaction, member, channelId, add = true) {
-        if (add) {
+    static async addMemberToPendingChallengers(interaction, member, channelId/*, add = true*/) {
+        // if (add) {
             return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
-        }
-        else {
-            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
-        }
+        // }
+        // else {
+        //     return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+        // }
     }
 
     static async addMemberToChallengers(interaction, member, channelId, add = true, removeFromPending = true) {
@@ -394,7 +427,7 @@ class VyklykManager {
 
     static getVyklyksChannelCategory(interaction) {
         return interaction.guild.channels.cache.find(x =>
-            x.type === ChannelType.GuildCategory && x.name === discord_vyklyks_category_name);
+            x.type === ChannelType.GuildCategory && x.id === discord_vyklyks_category_id);
     }
 
     static isVyklykChannel(interaction, channel) {

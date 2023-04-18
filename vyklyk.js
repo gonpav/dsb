@@ -28,11 +28,12 @@ class User {
 }
 
 class Challenger extends User {
-	constructor(id, name, vyklykId = null, faceitName = null, status = ChallengerStatus.Pending) {
+	constructor(id, name, vyklykId, faceitName, locale = 'en-US', status = ChallengerStatus.Pending) {
         super(id, name);
         this.vyklykId = vyklykId;
         this.faceitName = faceitName;
         this.status = status;
+        this.locale = locale;
 	}
 }
 

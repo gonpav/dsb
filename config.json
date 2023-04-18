@@ -1,6 +1,6 @@
 {
   "discord_vyklyk_webhook": "Vyklyk Hook {0}",
-  "discord_vyklyks_category_name": "Vyklyks",
+  "discord_vyklyks_category_id": "1083198279405285478",
   "discord_admin_inceptor_role_name": "Admin Inceptor",
   "discord_channel_inceptors_role_name": "{0}-Inceptors",
   "discord_channel_challengers_role_name": "{0}-Challengers",
