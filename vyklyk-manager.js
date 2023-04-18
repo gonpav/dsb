@@ -169,6 +169,39 @@ class VyklykManager {
         }
     }
 
+    static async getChallengersDBEntriesTest(channelId) {
+        // returns array of 5 challengers for testing purposes
+        const challengers = [];
+        const size = 5;
+        for (let i = 0; i < size; i++) {
+            // if i is even - challenger is accepted, otherwise - pending   
+            if (i % 2 === 0) {
+                challengers.push(new Challenger(i, `Name${i}`, channelId, `Faceit${i}`, 'en', ChallengerStatus.Pending));
+            } else {
+                challengers.push(new Challenger(i, `Name${i}`, channelId, `Faceit${i}`, 'en', ChallengerStatus.Approved));
+            }
+        }
+        challengers.push(new Challenger(size, `Name${size}`, channelId, `Faceit${size}`, 'en', ChallengerStatus.Declined));
+        return challengers;
+    }
+
+    static async getChallengersDBEntries(channelId) {
+        const prefix = `${channelId}_u`;
+        const challengers = [];
+        try {
+			const users = await replitDB.list(prefix);
+            for (let i = 0; i < users.length; i++) {
+                challengers.push(await VyklykManager.getChallengerDBEntry(channelId, users[i].replace(prefix, '')));
+            }
+            return challengers;
+        }
+        catch (err) {
+            // Not critical error for NOW
+            console.log (`Error: failed to get a challenger from Replit DB with the key: ${key}.\nError details: ${err.toString()}`);
+            return challengers;
+        }
+    }
+
     // Other methods
 
     static async getChannelById(interaction, channelId) {

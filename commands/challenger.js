@@ -11,7 +11,7 @@ module.exports = {
 		.setDescription('Applies operations to the challenger')
 		.addStringOption(option =>
 			option.setName('vyklyk-id')
-				.setDescription('Id of the channel under VYKLYKS category')
+				.setDescription('Id of the channel under CHALLENGES category')
 				.setRequired(true))
 		.addStringOption(option =>
 			option.setName('challenger-id')

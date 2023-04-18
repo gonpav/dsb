@@ -8,7 +8,7 @@ module.exports = {
 		.setDescription('Publishes yet unpublished vyklyk')
 		.addStringOption(option =>
 			option.setName('vyklyk-id')
-				.setDescription('Id of the channel under VYKLYKS category')
+				.setDescription('Id of the channel under CHALLENGES category')
 				.setRequired(true))
 		.addStringOption(option =>
 			option.setName('unpublish')
