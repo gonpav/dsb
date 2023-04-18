@@ -4,6 +4,8 @@ const BtnCommands = require('../btn-commands.js');
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
+		if (interaction.user.bot) { return; }
+
 		if (interaction.isChatInputCommand()) {
 			// console.log(interaction);
 
