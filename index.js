@@ -7,6 +7,8 @@ if (process.env.KEEP_ALIVE === 'true') {
     keep_alive = require('./keep_alive.js');
 }
 
+// console.log(process.env.REPLIT_DB_URL);
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
