@@ -22,7 +22,7 @@ module.exports = {
 		let choices;
 
 		if (focusedOption.name === 'category') {
-			choices = ['all', 'inceptors', 'applicants', 'challengers', 'banned' /* , 'backers', 'followers', 'winners' */];
+			choices = ['all', 'inceptors', 'applicants', 'challengers', 'declined' /* , 'backers', 'followers', 'winners' */];
 		}
 
 		const filtered = choices.filter(choice => choice.startsWith(focusedOption.value));
@@ -67,6 +67,29 @@ module.exports = {
 
 				message = summaryMessage(allUsers, ChallengerStatus.Declined, 'Declined users');
 				message == null ? null : await interaction.followUp({ content: message, ephemeral: true });
+			}
+			else if (category === 'inceptors') {
+				await interaction.followUp({ content: `...${italic('not yet implemented')}...`, ephemeral: true });
+			}
+			else if (category === 'applicants') {
+				const allUsers = await VyklykManager.getChallengersDBEntries(channelId);
+				let message = summaryMessage(allUsers, ChallengerStatus.Pending, 'Pending applicants');
+				message = message === null ? 'No pending applicants found' : message;
+				await interaction.followUp({ content: message, ephemeral: true });
+			}
+			else if (category === 'challengers') {
+				const allUsers = await VyklykManager.getChallengersDBEntries(channelId);
+				let message = summaryMessage(allUsers, ChallengerStatus.Approved, 'Approved challengers');
+				message = message === null ? 'No approved challengers found' : message;
+				await interaction.followUp({ content: message, ephemeral: true });
+			}
+			else if (category === 'declined') {
+				const allUsers = await VyklykManager.getChallengersDBEntries(channelId);
+				let message = summaryMessage(allUsers, ChallengerStatus.Declined, 'Declined users');
+				message = message === null ? 'No declined users found' : message;
+
+				// TODO: add information about banned users also
+				await interaction.followUp({ content: message, ephemeral: true });
 			}
 		}
 		catch (err) {
