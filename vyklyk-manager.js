@@ -122,11 +122,21 @@ class VyklykManager {
         }
     }
 
-    static async createChallengerDBEntry(channelId, userId, name, faceit, locale) {
+    static async createOrUpdateChallengerDBEntry(channelId, userId, name, faceit, locale) {
 
         const key = `${channelId}_u${userId}`;
         try {
-            const user = new Challenger(userId, name, channelId, faceit, locale, ChallengerStatus.Pending);
+            let user = await VyklykManager.getChallengerDBEntry(channelId, userId);
+            if (user === null) {
+                user = new Challenger(userId, name, channelId, faceit, locale, ChallengerStatus.Pending, null);
+            }
+            else {
+                user.name = name;
+                user.faceit = faceit;
+                user.locale = locale;
+                user.status = ChallengerStatus.Pending;
+                // user.declineReason = null; // Do NOT nulify decline reason to keep track of previosly declined users
+            }
             await replitDB.set(key, user);
         }
         catch (err) {
@@ -135,12 +145,13 @@ class VyklykManager {
         }
     }
 
-    static async updateChallengerDBEntry(channelId, userId, status) {
+    static async updateChallengerDBEntryStatus(channelId, userId, status, declineReason) {
 
         const key = `${channelId}_u${userId}`;
         try {
             const user = await VyklykManager.getChallengerDBEntry(channelId, userId);
             user.status = status;
+            user.declineReason = declineReason;
             await replitDB.set(key, user);
         }
         catch (err) {
@@ -156,7 +167,7 @@ class VyklykManager {
 			const result = await replitDB.get(key, true);
 			const res = JSON.parse(result, (key2, value) => {
 				if (key2 === '') {
-					return new Challenger(value.id, value.name, value.vyklykId, value.faceitName, value.locale, value.status);
+					return new Challenger(value.id, value.name, value.vyklykId, value.faceitName, value.locale, value.status, value.declineReason);
 				}
 				return value;
 			});
@@ -448,23 +459,19 @@ class VyklykManager {
 
     static async addMemberToPendingChallengers(interaction, member, channelId, add = true) {
         if (add) {
-            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
+            return await VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name);
         }
         else {
-            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
+            return await VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
         }
     }
 
-    static async addMemberToChallengers(interaction, member, channelId, add = true, removeFromPending = true) {
-        if (removeFromPending) {
-            // VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_pending_challengers_role_name, false);
-            VyklykManager.addMemberToPendingChallengers(interaction, member, channelId, false);
-        }
+    static async addMemberToChallengers(interaction, member, channelId, add = true) {
         if (add) {
-            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name);
+            return await VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name);
         }
         else {
-            return VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name, false);
+            return await VyklykManager.addMemberToRoleByName(interaction, member, channelId, discord_channel_challengers_role_name, false);
         }
     }
 

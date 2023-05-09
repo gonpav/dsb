@@ -23,12 +23,12 @@ module.exports = {
 				.setAutocomplete(true)
 				.setRequired(true))
 		.addStringOption(option =>
-			option.setName('faceit')
-				.setDescription('Faceit nickname. (Must be specified for \'approve-applicant\' command)')
+			option.setName('silent-mode')
+				.setDescription('Type \'yes\' to NOT notify the challenger about the operation')
 				.setRequired(false))
 		.addStringOption(option =>
 			option.setName('decline-reason')
-				.setDescription('Reason of a decline to particilate in the challenge. Will be sent to the challanger')
+				.setDescription('Reason of refusal to participate in the challenge. Will be sent to the challanger')
 				.setRequired(false))
 		.addStringOption(option =>
 			option.setName('ban')
@@ -45,7 +45,7 @@ module.exports = {
 
 		if (focusedOption.name === 'command') {
 			// choices = ['approve-applicant', 'decline-applicant', 'delete-existing'];
-			choices = ['approve-applicant', 'decline-applicant'];
+			choices = ['approve', 'decline'];
 		}
 
 		if (focusedOption.name === 'ban') {
@@ -76,54 +76,50 @@ module.exports = {
 			const locale = interaction.options.getString('locale');
 
 			const command = interaction.options.getString('command');
-			if (command === 'approve-applicant') {
-				const faceitNickname = interaction.options.getString('faceit');
-				if (!faceitNickname) {
-					return await interaction.followUp({ content: 'Error: faceit nickname should be specified for the \'approve-applicant\' command', ephemeral: true });
-				}
-
-				if (!VyklykManager.isMemberPendingChallenger(challenger, channelId)) {
-					return await interaction.followUp({ content: 'Error: this user is not a pending challenger', ephemeral: true });
-				}
+			if (command === 'approve') {
 
 				// Update challenger in the Database
-				await VyklykManager.updateChallengerDBEntry(channelId, challengerId, ChallengerStatus.Approved);
-				// change role
-				await VyklykManager.addMemberToChallengers(interaction, challenger, channelId, true, true);
+				await VyklykManager.updateChallengerDBEntryStatus(channelId, challengerId, ChallengerStatus.Approved, null);
+				// add to Challengers and remove from Pending Challengers roles
+				await VyklykManager.addMemberToPendingChallengers(interaction, challenger, channelId, false);
+				await VyklykManager.addMemberToChallengers(interaction, challenger, channelId, true);
+
+				// Add challenger to discussion thread explicetly to make
+				// 'discussion' thread visible to the challenger
+				const discussionThread = VyklykManager.getDiscussionThread(channel);
+				await discussionThread.members.add(challenger);
+
 				// send message
 				let message = MsgConstants.getMessage(
 					MsgConstants.MSG_REGISTRATION_APPROVED,
 					locale ? locale : 'en-US' /* interaction.locale */,
 					userMention(challengerId),
 					channelMention(channelId),
-					`<#${VyklykManager.getDiscussionThread(channel).id}>`); // this works better than this: channelMention(VyklykManager.getDiscussionThread(channel).id)
+					`<#${discussionThread.id}>`); // this works better than this: channelMention(VyklykManager.getDiscussionThread(channel).id)
 
 				// Send a message to the challenger
-				await challenger.send(message);
-				await interaction.followUp({ content: 'Challenger approved and notified!', ephemeral: true });
-
-				message = `the Discord user ${inlineCode(challenger.displayName)} / (${inlineCode(challenger.user.tag)}) with 'challenger-id': ${inlineCode(challengerId)} and 'Faceit': ${inlineCode(faceitNickname)} was approved as a challenger by ${userMention(interaction.user.id)}. \nPlease make an update in channel with user statistics using ${inlineCode('FaceitFinder')} bot`;
+				if (interaction.options.getString('silent-mode') !== 'yes') {
+					await challenger.send(message);
+					await interaction.followUp({ content: 'Challenger approved and notified!', ephemeral: true });
+				}
+				else {
+					await interaction.followUp({ content: 'Challenger approved but NOT notified!', ephemeral: true });
+				}
+				message = `the Discord user ${inlineCode(challenger.displayName)} / (${inlineCode(challenger.user.tag)}) with 'challenger-id': ${inlineCode(challengerId)} was approved as a challenger by ${userMention(interaction.user.id)}. \nPlease make an update in channel with user statistics using ${inlineCode('FaceitFinder')} bot`;
 				await VyklykManager.tryNotifyInceptors(interaction, channel, message);
 			}
-			else if (command === 'decline-applicant') {
+			else if (command === 'decline') {
 				const declineReason = interaction.options.getString('decline-reason');
 				if (!declineReason) {
 					return await interaction.followUp({ content: 'Error: decline reason should be specified for the \'decline-applicant\' command', ephemeral: true });
 				}
 
-				// TODO : todo Decline
-				const toban = (interaction.options.getString('ban') === 'yes');
-				console.log(toban);
-
-				if (!VyklykManager.isMemberPendingChallenger(challenger, channelId)) {
-					return await interaction.followUp({ content: 'Error: this user is not a pending challenger', ephemeral: true });
-				}
-
 				// Update challenger in the Database
-				await VyklykManager.updateChallengerDBEntry(channelId, challengerId, ChallengerStatus.Declined);
-				// remove from Pending challengers role
-				VyklykManager.addMemberToPendingChallengers(interaction, challenger, channelId, false);
-				if (toban) {
+				await VyklykManager.updateChallengerDBEntryStatus(channelId, challengerId, ChallengerStatus.Declined, declineReason);
+				// remove from Challengers or Pending Challengers roles
+				await VyklykManager.addMemberToPendingChallengers(interaction, challenger, channelId, false);
+				await VyklykManager.addMemberToChallengers(interaction, challenger, channelId, false);
+				if (interaction.options.getString('ban') === 'yes') {
 					// add to banned if required
 					VyklykManager.addMemberToBannedChallengers(interaction, challenger, channelId, true);
 				}
@@ -135,18 +131,17 @@ module.exports = {
 					userMention(challengerId),
 					declineReason);
 
-					// Send a message to the challenger
-				await challenger.send(message);
-				await interaction.followUp({ content: 'Challenger declined!', ephemeral: true });
+				// Send a message to the challenger
+				if (interaction.options.getString('silent-mode') !== 'yes') {
+					await challenger.send(message);
+					await interaction.followUp({ content: 'Challenger declined and notified!', ephemeral: true });
+				}
+				else {
+					await interaction.followUp({ content: 'Challenger declined but NOT notified!', ephemeral: true });
+				}
 
 				message = `the Discord user ${inlineCode(challenger.displayName)} / (${inlineCode(challenger.user.tag)}) with 'challenger-id': ${inlineCode(challengerId)} was declined to become a challenger by ${userMention(interaction.user.id)}. \nThe reason is: ${inlineCode(declineReason)}`;
 				await VyklykManager.tryNotifyInceptors(interaction, channel, message);
-			}
-			else if (command === 'delete-existing') {
-				// TODO : todo Delete existing
-				const toban = (interaction.options.getString('ban') === 'yes');
-				console.log(toban);
-				await interaction.followUp({ content: 'Deleted', ephemeral: true });
 			}
 		}
 		catch (err) {

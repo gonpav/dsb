@@ -94,8 +94,8 @@ module.exports = {
                     await i.deferUpdate();
                     const faceitNickname = i.fields.getTextInputValue(MODAL_FACEIT_INPUT_ID);
 
-                    VyklykManager.createChallengerDBEntry(channelId, i.member.user.id, i.member.displayName, faceitNickname, interaction.locale);
-                    VyklykManager.addMemberToPendingChallengers(i, i.member, channelId);
+                    await VyklykManager.createOrUpdateChallengerDBEntry(channelId, i.member.user.id, i.member.displayName, faceitNickname, interaction.locale);
+                    await VyklykManager.addMemberToPendingChallengers(i, i.member, channelId);
 
                     let message = MsgConstants.getMessage(
                         MsgConstants.MSG_REGISTRATION_SUCCESS,

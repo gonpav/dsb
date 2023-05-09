@@ -49,7 +49,15 @@ module.exports = {
 				if (filteredUsers.length === 0) return null;
 				let message = `${underscore(messageTitle)}: ${filteredUsers.length}\n`;
 				filteredUsers.forEach(user => {
-					message += `Name: ${inlineCode(user.name)}, Faceit: ${inlineCode(user.faceitName)}, Language: ${inlineCode(user.locale)}\n`;
+					if (status === ChallengerStatus.Declined) {
+						message += `Name: ${inlineCode(user.name)} / ${inlineCode(user.id)}, Faceit: ${inlineCode(user.faceitName)}, Language: ${inlineCode(user.locale)}, Decline reason: ${inlineCode(user.declineReason)}\n`;
+					}
+					else if (user.declineReason) {
+						message += `Name: ${inlineCode(user.name)} / ${inlineCode(user.id)}, Faceit: ${inlineCode(user.faceitName)}, Language: ${inlineCode(user.locale)}, Previously declined with the reason: ${inlineCode(user.declineReason)}\n`;
+					}
+					else {
+						message += `Name: ${inlineCode(user.name)} / ${inlineCode(user.id)}, Faceit: ${inlineCode(user.faceitName)}, Language: ${inlineCode(user.locale)}\n`;
+					}
 				});
 				return message;
 			}
@@ -69,6 +77,7 @@ module.exports = {
 				message == null ? null : await interaction.followUp({ content: message, ephemeral: true });
 			}
 			else if (category === 'inceptors') {
+				// TODO: add information about inceptors
 				await interaction.followUp({ content: `...${italic('not yet implemented')}...`, ephemeral: true });
 			}
 			else if (category === 'applicants') {
